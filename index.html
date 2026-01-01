@@ -1570,8 +1570,31 @@
         sendMessage(); 
     }
 
+    
+   // ==========================================
+    // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
+    // ==========================================
+    window.showPage = showPage;
+    window.toggleTheme = toggleTheme;
+    window.resetMalla = resetMalla;
+    window.exportPDF = exportPDF;
+    window.addGradeRow = addGradeRow;
+    window.calculateGrades = calculateGrades;
+    window.resetCalculator = resetCalculator;
+    window.addToSchedule = addToSchedule;
+    window.clearSchedule = clearSchedule;
+    window.removeFromSchedule = removeFromSchedule;
+    window.downloadICS = downloadICS;
+    window.exportSchedulePDF = exportSchedulePDF;
+    window.downloadDeadlinesICS = downloadDeadlinesICS;
+    window.addHellEvent = addHellEvent;
+    window.removeHellEvent = removeHellEvent;
+    window.sendMessage = sendMessage;
+    window.handleChatEnter = handleChatEnter;
+    window.askAI = askAI;
+
+    // Iniciar la app
     init();
-   
 </script>
 </body>
 </html>
