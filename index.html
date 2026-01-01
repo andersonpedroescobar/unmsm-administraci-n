@@ -702,16 +702,14 @@
         </div>
     </div>
 
-
 <script type="module">
     // =================================================================
-    // 1. CONFIGURACIÓN E IMPORTACIONES DE FIREBASE
+    // 1. CONFIGURACIÓN FIREBASE
     // =================================================================
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // --- TUS CLAVES REALES DE FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyDBq8ExQaOE1QLdVqedmesz1jxdwv2dR5Y",
         authDomain: "unmsm-administracion.firebaseapp.com",
@@ -722,24 +720,20 @@
         measurementId: "G-16KXE5N8ZD"
     };
 
-    // --- LISTA BLANCA DE ACCESO ---
     const ALLOWED_EMAILS = [
         "andersonpedroescobar292@gmail.com",
         "20231490@lamolina.edu.pe"
     ];
 
-    // INICIALIZAR SERVICIOS
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
-
-    let currentUser = null; // Guardará al usuario logueado
+    let currentUser = null;
 
     // =================================================================
-    // 2. DATOS POR DEFECTO (MALLA ADMINISTRACIÓN 2023)
+    // 2. DATOS DE CARRERA (MALLA ADMINISTRACIÓN)
     // =================================================================
-    // Esta lista se usa si el usuario es nuevo o resetea su carrera
     const DEFAULT_ADMIN_COURSES = [
         {id:'EGO1O1', name:'Lenguaje', cr:4, c:1, t:'O', req:[], tags:[]},
         {id:'EGO1O2', name:'Métodos de Estudio Universitario', cr:3, c:1, t:'O', req:[], tags:[]},
@@ -841,126 +835,85 @@
         {id:'ADO23103', name:'Gestión de PYMES', cr:3, c:10, t:'O', req:[], tags:['op']}
     ];
 
-    // Variables de Estado (Ahora se cargan desde Firebase)
     let courses = []; 
     let approved = new Set();
     let approvedGrades = {}; 
     let acquiredSkills = new Set();
     let mySchedule = []; 
     let deadlineEvents = [];
-    let jobApplications = []; // Nuevo para Kanban
+    let jobApplications = [];
 
     // =================================================================
-    // 3. LOGICA DE AUTENTICACIÓN Y BASE DE DATOS
+    // 3. LOGICA FIREBASE Y LOGIN
     // =================================================================
-
     const loginBtn = document.getElementById('google-login-btn');
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(err => {
-                console.error(err);
-                alert("Error al iniciar sesión: " + err.message);
-            });
+            signInWithPopup(auth, provider).catch(err => alert("Error: " + err.message));
         });
     }
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // Verificar lista blanca (en minúsculas)
             if (ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
                 currentUser = user;
-                // Ocultar login
                 document.getElementById('login-overlay').style.display = 'none';
                 if(document.getElementById('user-email-display')) {
                     document.getElementById('user-email-display').innerText = user.email;
                 }
-                
-                // Cargar datos de la nube
                 await loadCloudData();
                 initApp();
             } else {
-                alert("Acceso denegado. Tu correo no está autorizado.");
+                alert("Correo no autorizado.");
                 signOut(auth);
             }
         } else {
-            // Mostrar login
             document.getElementById('login-overlay').style.display = 'flex';
         }
     });
 
-    window.logout = () => {
-        if(confirm("¿Cerrar sesión?")) {
-            signOut(auth).then(() => location.reload());
-        }
-    };
+    window.logout = () => { if(confirm("¿Salir?")) signOut(auth).then(()=>location.reload()); };
 
-    // --- GUARDAR EN FIRESTORE ---
     async function saveCloudData() {
         if(!currentUser) return;
-        
         const userRef = doc(db, "users", currentUser.email);
-        
-        // Preparamos el objeto a guardar
-        const dataToSave = {
-            // Guardamos la malla completa por si el usuario la personalizó
+        const data = {
             courses: JSON.stringify(courses),
-            
-            // Guardamos el progreso
             approved: JSON.stringify([...approved]),
             grades: JSON.stringify(approvedGrades),
             skills: JSON.stringify([...acquiredSkills]),
-            
-            // Guardamos herramientas
             schedule: JSON.stringify(mySchedule),
             deadlines: JSON.stringify(deadlineEvents),
-            jobs: JSON.stringify(jobApplications) // Kanban
+            jobs: JSON.stringify(jobApplications)
         };
-        
-        try {
-            await setDoc(userRef, dataToSave, { merge: true });
-            console.log("Sincronizado con la nube ☁️");
-        } catch (e) {
-            console.error("Error guardando:", e);
-        }
+        try { await setDoc(userRef, data, { merge: true }); } 
+        catch (e) { console.error("Error guardando:", e); }
     }
 
-    // --- CARGAR DE FIRESTORE ---
     async function loadCloudData() {
         try {
-            const userRef = doc(db, "users", currentUser.email);
-            const docSnap = await getDoc(userRef);
-
+            const docSnap = await getDoc(doc(db, "users", currentUser.email));
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                
-                // 1. Cargar Malla
-                if(data.courses) courses = JSON.parse(data.courses);
-                else courses = JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES));
-
-                // 2. Cargar Datos
-                if(data.approved) approved = new Set(JSON.parse(data.approved));
-                if(data.grades) approvedGrades = JSON.parse(data.grades);
-                if(data.skills) acquiredSkills = new Set(JSON.parse(data.skills));
-                if(data.schedule) mySchedule = JSON.parse(data.schedule);
-                if(data.deadlines) deadlineEvents = JSON.parse(data.deadlines);
-                if(data.jobs) jobApplications = JSON.parse(data.jobs);
-
+                courses = data.courses ? JSON.parse(data.courses) : JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES));
+                approved = data.approved ? new Set(JSON.parse(data.approved)) : new Set();
+                approvedGrades = data.grades ? JSON.parse(data.grades) : {};
+                acquiredSkills = data.skills ? new Set(JSON.parse(data.skills)) : new Set();
+                mySchedule = data.schedule ? JSON.parse(data.schedule) : [];
+                deadlineEvents = data.deadlines ? JSON.parse(data.deadlines) : [];
+                jobApplications = data.jobs ? JSON.parse(data.jobs) : [];
             } else {
-                // USUARIO NUEVO: Cargar defaults y crear registro
                 courses = JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES));
-                approved = new Set();
-                approvedGrades = {};
-                // Guardamos inicial
                 await saveCloudData();
             }
         } catch (e) {
-            console.error("Error cargando datos:", e);
-            alert("Error de conexión con la base de datos.");
+            console.error(e);
+            alert("Error de conexión con la base de datos. Revisa la consola.");
         }
     }
 
     // =================================================================
-    // 4. FUNCIONES DE GESTIÓN (MALLAS, KANBAN, ETC)
+    // 4. FUNCIONALIDADES DE LA APP
     // =================================================================
 
     function initApp() {
@@ -968,240 +921,103 @@
         renderSkills();
         renderHellGrid();
         renderKanban();
-        initSchedule(); // Inicializar dropdowns del simulador
+        initSchedule();
         initCalculator();
         updateStats();
     }
 
-    // --- IMPORTAR / EXPORTAR MALLAS ---
-    window.exportMallaJSON = () => {
-        const json = JSON.stringify(courses, null, 2);
-        document.getElementById('json-malla-area').value = json;
-        navigator.clipboard.writeText(json);
-        alert("JSON copiado. Pásaselo a un amigo.");
-    };
-
-    window.importMallaJSON = () => {
-        try {
-            const json = document.getElementById('json-malla-area').value;
-            const newCourses = JSON.parse(json);
-            if(!Array.isArray(newCourses) || !newCourses[0].id) throw new Error("Formato inválido");
-
-            if(confirm("⚠️ Importar una nueva malla borrará tu progreso actual (notas). ¿Seguro?")) {
-                courses = newCourses;
-                approved = new Set();
-                approvedGrades = {};
-                saveCloudData();
-                location.reload();
-            }
-        } catch (e) {
-            alert("JSON inválido.");
-        }
-    };
-
-    window.loadPresetMalla = () => {
-        const val = document.getElementById('preset-career').value;
-        if(val === 'admin') {
-            if(confirm("¿Reiniciar a Administración? Se borrará el progreso.")) {
-                courses = JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES));
-                approved = new Set();
-                approvedGrades = {};
-                saveCloudData();
-                location.reload();
-            }
-        } else {
-            alert("Próximamente más carreras oficiales. Por ahora usa 'Importar JSON'.");
-        }
-    };
-
-    // --- KANBAN ---
-    window.addJob = () => {
-        const co = document.getElementById('job-company').value;
-        const ro = document.getElementById('job-role').value;
-        const src = document.getElementById('job-source').value;
-        if(!co || !ro) return alert("Faltan datos");
-
-        jobApplications.push({
-            id: Date.now(),
-            company: co, role: ro, source: src,
-            status: 'todo',
-            date: new Date().toLocaleDateString()
-        });
-        saveCloudData();
-        renderKanban();
-        // Limpiar
-        document.getElementById('job-company').value = '';
-        document.getElementById('job-role').value = '';
-    };
-
-    window.moveJob = (id, newStatus) => {
-        const job = jobApplications.find(j => j.id === id);
-        if(job) {
-            job.status = newStatus;
-            saveCloudData();
-            renderKanban();
-            if(newStatus === 'offer') alert("¡FELICIDADES! 🎉");
-        }
-    };
-
-    window.deleteJob = (id) => {
-        if(confirm("¿Eliminar?")) {
-            jobApplications = jobApplications.filter(j => j.id !== id);
-            saveCloudData();
-            renderKanban();
-        }
-    };
-
-    function renderKanban() {
-        ['todo', 'process', 'offer', 'reject'].forEach(s => {
-            const col = document.getElementById('col-'+s);
-            if(col) col.innerHTML = '';
-        });
-
-        jobApplications.forEach(job => {
-            const col = document.getElementById('col-' + job.status);
-            if(!col) return;
-
-            const card = document.createElement('div');
-            card.className = 'job-card';
-            
-            let actions = '';
-            if(job.status === 'todo') actions = `<button class="btn-move" onclick="moveJob(${job.id}, 'process')">➡️</button>`;
-            if(job.status === 'process') actions = `<button class="btn-move" onclick="moveJob(${job.id}, 'todo')">⬅️</button> <button class="btn-move" onclick="moveJob(${job.id}, 'offer')">✅</button> <button class="btn-move" onclick="moveJob(${job.id}, 'reject')">❌</button>`;
-            if(job.status === 'offer') actions = `<button class="btn-move" onclick="moveJob(${job.id}, 'process')">⬅️</button>`;
-            if(job.status === 'reject') actions = `<button class="btn-move" onclick="moveJob(${job.id}, 'todo')">🔄</button>`;
-
-            card.innerHTML = `
-                <button class="btn-delete-job" onclick="deleteJob(${job.id})">×</button>
-                <div class="job-company">${job.company}</div>
-                <div class="job-role">${job.role}</div>
-                <div class="job-source">${job.source}</div>
-                <div style="font-size:0.7rem; color:#aaa;">${job.date}</div>
-                <div class="btn-move-group">${actions}</div>
-            `;
-            col.appendChild(card);
-        });
-    }
-
-    // --- SKILLS DINÁMICOS ---
-    function renderSkills() {
-        const grid = document.getElementById('tools-grid');
-        const profileDash = document.querySelector('.profile-dashboard');
-        if(!profileDash) return;
-
-        // Limpiar y regenerar barras basadas en TAGS de la malla actual
-        profileDash.innerHTML = '';
-        const areasMap = {}; 
-        const tagNames = {
-            'fin': 'Finanzas', 'mkt': 'Marketing', 'rrhh': 'RRHH', 'op': 'Operaciones', 
-            'ti': 'Sistemas', 'inv': 'Investigación', 'leg': 'Legal', 'econ': 'Economía'
+    // --- NAVIGATION ---
+    window.showPage = function(id) {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('page-'+id).classList.add('active');
+        
+        const map = {
+            'config': 0,
+            'estrategia': 1,
+            'malla': 2,
+            'progreso': 3,
+            'analitica': 4,
+            'calculadora': 5,
+            'skills': 6,
+            'simulador': 7,
+            'kanban': 8,
+            'recursos': 9
         };
 
-        courses.forEach(c => {
-            if(c.tags) c.tags.forEach(tag => {
-                if(!areasMap[tag]) areasMap[tag] = { name: tagNames[tag] || tag.toUpperCase(), total: 0, app: 0 };
-                areasMap[tag].total += c.cr;
-                if(approved.has(c.id)) areasMap[tag].app += c.cr;
-            });
-        });
+        const btns = document.querySelectorAll('.nav-menu .nav-btn');
+        if(map[id] !== undefined && btns[map[id]]) btns[map[id]].classList.add('active');
 
-        const colors = ['#27ae60', '#e67e22', '#8e44ad', '#2980b9', '#c0392b', '#16a085'];
-        let colorIdx = 0;
+        if(id === 'progreso') renderDashboard();
+        if(id === 'analitica') renderAnalytics();
+        if(id === 'simulador') updateScheduleDropdowns();
+    };
 
-        Object.keys(areasMap).forEach(key => {
-            const area = areasMap[key];
-            const pct = area.total > 0 ? Math.round((area.app / area.total) * 100) : 0;
-            const color = colors[colorIdx % colors.length];
-            colorIdx++;
-
-            const card = document.createElement('div');
-            card.className = 'profile-card';
-            card.innerHTML = `
-                <div class="profile-title" style="color:${color}">${area.name}</div>
-                <div class="profile-percent">${pct}%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" style="background:${color}; width:${pct}%"></div></div>
-            `;
-            profileDash.appendChild(card);
-        });
-
-        // Tools (Manuales por ahora, o podrías guardarlas en DB también)
-        // Por simplicidad, renderizamos una lista estática básica si quieres
-        if(grid) grid.innerHTML = ''; 
-        // (Aquí podrías restaurar tu lista skillsDB original si deseas que sea fija)
-    }
+    window.toggleTheme = function() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    };
 
     // --- MALLA ---
     window.renderMalla = function() {
         const grid = document.getElementById('malla-grid');
         if(!grid) return;
         grid.innerHTML = '';
-        
-        const maxCiclo = courses.length > 0 ? Math.max(...courses.map(c => c.c)) : 10;
+        const maxCiclo = courses.length ? Math.max(...courses.map(c => c.c)) : 10;
 
         for(let i=1; i<=maxCiclo; i++) {
             const col = document.createElement('div');
             col.className = 'cycle-col';
             col.innerHTML = `<div class="cycle-title">Ciclo ${i}</div>`;
-            
             courses.filter(c => c.c === i).forEach(c => {
                 const card = document.createElement('div');
                 card.className = `course-card type-${c.t}`;
-                card.id = c.id;
+                if(approved.has(c.id)) card.classList.add('completed');
+                else if(c.req && !c.req.every(r => approved.has(r))) card.classList.add('locked');
                 
-                const passed = approved.has(c.id);
-                // Verificar requisitos dinámicamente
-                const reqMet = c.req ? c.req.every(r => approved.has(r)) : true;
-
-                if(passed) card.classList.add('completed');
-                else if(!reqMet) { card.classList.add('locked'); card.title = "Falta requisito"; }
-
-                let gradeHtml = (passed && approvedGrades[c.id]) ? `<div class="grade-badge">${approvedGrades[c.id]}</div>` : '';
-
+                let grade = approved.has(c.id) && approvedGrades[c.id] ? `<div class="grade-badge">${approvedGrades[c.id]}</div>` : '';
+                
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#666">
                         <strong>${c.id}</strong> <span>${c.cr} Cr.</span>
                     </div>
                     <b>${c.name}</b>
                     <div style="font-size:0.75rem; color:#999; margin-top:5px; text-align:right">${c.t==='O'?'Oblig.':'Elect.'}</div>
-                    ${gradeHtml}
+                    ${grade}
                 `;
-                card.onclick = () => toggleCourse(c, reqMet);
+                card.onclick = () => window.toggleCourse(c);
                 col.appendChild(card);
             });
             grid.appendChild(col);
         }
     };
 
-    window.toggleCourse = function(c, reqMet) {
+    window.toggleCourse = function(c) {
         if(approved.has(c.id)) {
             const dep = courses.find(x => x.req && x.req.includes(c.id) && approved.has(x.id));
-            if(dep) return alert(`Bloquea a: ${dep.name}`);
+            if(dep) return alert(`No puedes desmarcar ${c.name}, es requisito de ${dep.name}`);
             approved.delete(c.id);
             delete approvedGrades[c.id];
         } else {
-            if(!reqMet) return;
-            let grade = prompt("Nota final (Opcional):", "14");
-            if(grade !== null) {
+            if(c.req && !c.req.every(r => approved.has(r))) return;
+            let g = prompt("Nota final (Opcional):", "14");
+            if(g !== null) {
                 approved.add(c.id);
-                if(grade && !isNaN(grade)) approvedGrades[c.id] = parseInt(grade);
+                if(g.trim() && !isNaN(g)) approvedGrades[c.id] = parseInt(g);
             } else return;
         }
-        updateStats();
-        renderMalla();
-        renderSkills();
-        saveCloudData(); // Guardar cambios
+        updateStats(); renderMalla(); renderSkills(); saveCloudData();
     };
 
     window.updateStats = function() {
-        let cr = 0, sum = 0, count = 0;
+        let cr=0, sum=0, count=0;
         courses.forEach(c => {
             if(approved.has(c.id)) {
                 cr += c.cr;
                 if(approvedGrades[c.id]) { sum += approvedGrades[c.id]*c.cr; count += c.cr; }
             }
         });
-        const pps = count > 0 ? (sum/count).toFixed(2) : "0.00";
-        
+        const pps = count ? (sum/count).toFixed(2) : "0.00";
         if(document.getElementById('credits-display')) {
             document.getElementById('credits-display').innerText = cr;
             document.getElementById('pps-display').innerText = pps;
@@ -1210,148 +1026,264 @@
     };
 
     window.resetMalla = function() {
-        if(confirm("¿Borrar todo el progreso de esta carrera?")) {
-            approved = new Set();
-            approvedGrades = {};
-            saveCloudData();
-            location.reload();
+        if(confirm("¿Borrar todo el progreso?")) {
+            approved = new Set(); approvedGrades = {};
+            saveCloudData(); location.reload();
         }
     };
 
-    // --- IA ADAPTATIVA ---
-    window.sendMessage = async function() {
-        const input = document.getElementById('user-msg');
-        const text = input.value.trim();
-        if(!text) return;
-
-        addAIMessage(text, 'user');
-        input.value = '';
+    // --- DASHBOARD & ANALYTICS ---
+    window.renderDashboard = function() {
+        // Necesitamos el total de créditos de la malla actual
+        const TOTAL = courses.reduce((a,b) => a + b.cr, 0); 
+        let appCr = 0;
+        courses.forEach(c => { if(approved.has(c.id)) appCr += c.cr; });
         
-        const loader = document.getElementById('ai-loading');
-        if(loader) loader.style.display = 'block';
-
-        // Contexto Dinámico
-        let mallaResumen = "";
-        const maxCiclo = courses.length > 0 ? Math.max(...courses.map(c => c.c)) : 10;
-        for(let i=1; i<=maxCiclo; i++) {
-            const list = courses.filter(c => c.c === i).map(c => c.name).join(', ');
-            if(list) mallaResumen += `[Ciclo ${i}]: ${list}\n`;
+        let pct = Math.round((appCr / TOTAL) * 100);
+        document.getElementById('stat-total').innerText = `${appCr} / ${TOTAL}`;
+        document.getElementById('bar-total').style.width = `${Math.min(100, pct)}%`;
+        document.getElementById('chart-text').innerText = `${pct}% Completado`;
+        
+        // Grafico
+        const ctx = document.getElementById('progressChart');
+        if(ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aprobado', 'Pendiente'],
+                    datasets: [{ data: [appCr, TOTAL-appCr], backgroundColor: ['#27ae60','#eee'] }]
+                }
+            });
         }
-
-        const ctx = {
-            pps: document.getElementById('pps-dashboard').innerText,
-            cr: document.getElementById('credits-display').innerText
-        };
-
-        const systemPrompt = `
-            Actúa como un Asesor Académico Universitario.
-            MALLA ACTUAL DEL ALUMNO (Cursos por ciclo):
-            ${mallaResumen}
-            
-            ESTADO ALUMNO: PPS: ${ctx.pps}, Créditos: ${ctx.cr}.
-            PREGUNTA: "${text}"
-            
-            INSTRUCCIONES:
-            - Responde usando SOLO la información de la malla de arriba.
-            - Si preguntan "qué llevo en ciclo X", lee la lista.
-            - Usa HTML (<b>, <br>) para formato.
-        `;
-
-        try {
-            const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(systemPrompt)}?model=openai`);
-            let raw = await response.text();
-            addAIMessage(raw.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'), 'ai');
-        } catch(e) {
-            addAIMessage("Error de conexión IA.", 'ai');
-        }
-        if(loader) loader.style.display = 'none';
     };
 
-    function addAIMessage(html, type) {
-        const chat = document.getElementById('chat-history');
-        const div = document.createElement('div');
-        div.className = type === 'user' ? 'msg-user' : 'msg-ai';
-        div.innerHTML = html;
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
+    window.renderAnalytics = function() {
+        // Historial PPS
+        const cycles = [], data = [];
+        const maxC = Math.max(...courses.map(c=>c.c));
+        for(let i=1; i<=maxC; i++) {
+            let s=0, n=0;
+            courses.filter(c=>c.c===i && approved.has(c.id)).forEach(c=>{
+                if(approvedGrades[c.id]) { s+=approvedGrades[c.id]*c.cr; n+=c.cr; }
+            });
+            if(n>0) { cycles.push(`C${i}`); data.push((s/n).toFixed(2)); }
+        }
+        
+        const ctx1 = document.getElementById('ppsHistoryChart');
+        if(ctx1) new Chart(ctx1, {type:'line', data:{labels:cycles, datasets:[{label:'PPS', data:data, borderColor:'#8a0303'}]}});
+        
+        // Areas
+        // ... (Tu logica de skills radar) ...
+    };
+
+    // --- CALCULADORA ---
+    let gradeRows = 0;
+    function initCalculator() {
+        const c = document.getElementById('grades-container');
+        if(c && c.children.length === 0) { window.addGradeRow(); window.addGradeRow(); }
+    }
+    window.addGradeRow = function() {
+        gradeRows++;
+        const c = document.getElementById('grades-container');
+        if(!c) return;
+        const d = document.createElement('div');
+        d.className = 'grade-row';
+        d.innerHTML = `<span style="width:30px">N${gradeRows}</span><input type="number" class="grade-input" placeholder="0-20"><input type="number" class="weight-input" placeholder="%"><button class="btn-del-row" onclick="this.parentElement.remove()">×</button>`;
+        c.appendChild(d);
+    };
+    window.calculateGrades = function() {
+        let s=0, w=0;
+        document.querySelectorAll('.grade-row').forEach(r => {
+            const g = parseFloat(r.querySelector('.grade-input').value);
+            const p = parseFloat(r.querySelector('.weight-input').value);
+            if(!isNaN(g) && !isNaN(p)) { s += g*(p/100); w += p; }
+        });
+        document.getElementById('res-current-avg').innerText = s.toFixed(2);
+        const rest = 100 - w;
+        document.getElementById('res-analysis').innerHTML = rest > 0 ? `Falta ${rest}%` : (s>=11 ? "Aprobado" : "Reprobado");
+    };
+    window.resetCalculator = function() {
+        document.getElementById('grades-container').innerHTML = '';
+        gradeRows=0; window.addGradeRow(); window.addGradeRow();
+        document.getElementById('res-current-avg').innerText = '0.00';
+    };
+
+    // --- SIMULADOR & ICS ---
+    function initSchedule() {
+        const s = document.getElementById('sched-start');
+        const e = document.getElementById('sched-end');
+        if(!s || !e) return;
+        s.innerHTML = ''; e.innerHTML = '';
+        for(let i=7; i<=22; i++) {
+            let t = (i<10?'0':'')+i+':00';
+            s.innerHTML+=`<option value="${i}">${t}</option>`;
+            if(i>7) e.innerHTML+=`<option value="${i}">${t}</option>`;
+        }
+        e.value=10; renderScheduleItems();
+    }
+    window.updateScheduleDropdowns = function() {
+        const sel = document.getElementById('sched-course');
+        if(!sel) return;
+        sel.innerHTML = '';
+        const avail = courses.filter(c => !approved.has(c.id) && (!c.req || c.req.every(r=>approved.has(r))));
+        avail.forEach(c => {
+            sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+    };
+    window.addToSchedule = function() {
+        const id = document.getElementById('sched-course').value;
+        const d = parseInt(document.getElementById('sched-day').value);
+        const s = parseInt(document.getElementById('sched-start').value);
+        const e = parseInt(document.getElementById('sched-end').value);
+        if(!id || s>=e) return alert("Datos inválidos");
+        
+        mySchedule.push({courseId:id, day:d, start:s, end:e, color:'#3498db'});
+        saveCloudData(); renderScheduleItems();
+    };
+    window.clearSchedule = function() { mySchedule=[]; saveCloudData(); renderScheduleItems(); };
+    window.removeFromSchedule = function(i) { mySchedule.splice(i,1); saveCloudData(); renderScheduleItems(); };
+    
+    function renderScheduleItems() {
+        document.querySelectorAll('.course-block').forEach(b => b.remove());
+        let t = 0;
+        mySchedule.forEach((item, idx) => {
+            const c = courses.find(x => x.id === item.courseId);
+            if(c) t+=c.cr;
+            const cell = document.querySelector(`.grid-cell[data-day="${item.day}"][data-hour="${item.start}"]`);
+            if(cell) {
+                const b = document.createElement('div');
+                b.className = 'course-block';
+                b.style.height = `${(item.end-item.start)*51 - 2}px`;
+                b.style.background = item.color;
+                b.innerHTML = `<div class="remove-course" onclick="removeFromSchedule(${idx})">×</div><strong>${c?c.name:item.courseId}</strong>`;
+                cell.appendChild(b);
+            }
+        });
+        if(document.getElementById('sim-credits')) document.getElementById('sim-credits').innerText = t;
     }
 
-    // --- MAPA DE CALOR (STRATEGY) ---
-    window.renderHellGrid = function() {
-        const grid = document.getElementById('hell-grid');
-        if(!grid) return;
-        grid.innerHTML = '';
-
-        for(let w=1; w<=16; w++) {
-            const events = deadlineEvents.filter(e => e.week === w);
-            const load = events.reduce((acc, e) => acc + e.type, 0);
-            let cls = 'level-0';
-            if(load >= 2) cls = 'level-1';
-            if(load >= 5) cls = 'level-2';
-            if(load >= 8) cls = 'level-3';
-
-            let items = events.map((evt, idx) => `
-                <div class="event-item">
-                    <span>${evt.type===3?'⚡':evt.type===2?'📝':'📌'} ${evt.name}</span>
-                    <span class="del-evt" onclick="removeHellEvent(${idx})">×</span>
-                </div>
-            `).join('');
-
-            const box = document.createElement('div');
-            box.className = `week-box ${cls}`;
-            box.innerHTML = `
-                <div class="week-header"><span>Semana ${w}</span><span class="week-score">${load} pts</span></div>
-                <div style="flex:1; overflow-y:auto; padding-right:2px;" class="custom-scroll">${items}</div>
-            `;
-            grid.appendChild(box);
-        }
+    // --- ICS GENERATOR ---
+    window.downloadICS = function() {
+        if(!mySchedule.length) return alert("Horario vacío");
+        let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//LuminStudy//ES\n";
+        const now = new Date();
+        
+        mySchedule.forEach(s => {
+            const c = courses.find(x => x.id === s.courseId);
+            const d = new Date();
+            d.setDate(d.getDate() + (s.day + 7 - d.getDay()) % 7);
+            d.setHours(s.start,0,0);
+            const e = new Date(d); e.setHours(s.end,0,0);
+            
+            const fmt = (dt) => dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+            ics += `BEGIN:VEVENT\nSUMMARY:${c?c.name:'Clase'}\nDTSTART:${fmt(d)}\nDTEND:${fmt(e)}\nRRULE:FREQ=WEEKLY;COUNT=16\nEND:VEVENT\n`;
+        });
+        ics += "END:VCALENDAR";
+        const b = new Blob([ics], {type:'text/calendar'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='horario.ics'; a.click();
     };
 
+    // --- KANBAN ---
+    window.addJob = () => { /* ... (ya incluido en la lógica de guardado) ... */ 
+        const co = document.getElementById('job-company').value;
+        const ro = document.getElementById('job-role').value;
+        if(!co) return;
+        jobApplications.push({id:Date.now(), company:co, role:ro, status:'todo', date:new Date().toLocaleDateString()});
+        saveCloudData(); renderKanban();
+    };
+    window.moveJob = (id, st) => {
+        const j = jobApplications.find(x=>x.id===id);
+        if(j) { j.status=st; saveCloudData(); renderKanban(); }
+    };
+    window.deleteJob = (id) => {
+        jobApplications = jobApplications.filter(x=>x.id!==id);
+        saveCloudData(); renderKanban();
+    };
+    function renderKanban() {
+        ['todo','process','offer','reject'].forEach(k => {
+            const el = document.getElementById('col-'+k);
+            if(el) {
+                el.innerHTML = '';
+                jobApplications.filter(j=>j.status===k).forEach(j => {
+                    const d = document.createElement('div'); d.className='job-card';
+                    d.innerHTML = `<b>${j.company}</b><br>${j.role}<br><button onclick="deleteJob(${j.id})">x</button>
+                    <br><button onclick="moveJob(${j.id},'process')">→</button>`; // Simplificado
+                    el.appendChild(d);
+                });
+            }
+        });
+    }
+
+    // --- IA & STRATEGY ---
+    window.renderHellGrid = function() { /* ... usar lógica anterior ... */ 
+        const g = document.getElementById('hell-grid');
+        if(!g) return;
+        g.innerHTML = '';
+        for(let w=1; w<=16; w++) {
+            const evs = deadlineEvents.filter(e=>e.week===w);
+            const load = evs.reduce((a,b)=>a+b.type,0);
+            const cls = load>=5 ? 'level-2' : (load>=2 ? 'level-1' : 'level-0');
+            const d = document.createElement('div'); d.className=`week-box ${cls}`;
+            let html = `<div class="week-header">Sem ${w} <small>${load}</small></div><div style="flex:1; overflow-y:auto">`;
+            evs.forEach((e,i) => html += `<div class="event-item">${e.name} <span onclick="removeHellEvent(${deadlineEvents.indexOf(e)})">x</span></div>`);
+            html += '</div>';
+            d.innerHTML = html;
+            g.appendChild(d);
+        }
+    };
     window.addHellEvent = function() {
         const w = parseInt(document.getElementById('evt-week').value);
         const n = document.getElementById('evt-name').value;
         const t = parseInt(document.getElementById('evt-type').value);
-        if(!w || !n) return alert("Datos inválidos");
+        if(w && n) {
+            deadlineEvents.push({week:w, name:n, type:t});
+            saveCloudData(); renderHellGrid();
+        }
+    };
+    window.removeHellEvent = function(i) { deadlineEvents.splice(i,1); saveCloudData(); renderHellGrid(); };
+    window.downloadDeadlinesICS = function() { /* logica similar a downloadICS */ };
+
+    // --- MENSAJERIA IA ---
+    window.handleChatEnter = (e) => { if(e.key==='Enter') window.sendMessage(); };
+    window.sendMessage = async function() {
+        const inp = document.getElementById('user-msg');
+        const txt = inp.value; if(!txt) return;
+        addAIMessage(txt, 'user'); inp.value='';
         
-        deadlineEvents.push({week:w, name:n, type:t});
-        deadlineEvents.sort((a,b) => a.week - b.week);
-        saveCloudData();
-        renderHellGrid();
+        // Prompt simplificado
+        const prompt = `Actúa como asesor académico. Malla actual tiene ${courses.length} cursos. Alumno tiene ${approved.size} cursos aprobados. Pregunta: ${txt}`;
+        try {
+            const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`);
+            const ans = await res.text();
+            addAIMessage(ans, 'ai');
+        } catch(e) { addAIMessage("Error IA", 'ai'); }
+    };
+    function addAIMessage(t, type) {
+        const c = document.getElementById('chat-history');
+        c.innerHTML += `<div class="${type==='user'?'msg-user':'msg-ai'}">${t}</div>`;
+        c.scrollTop = c.scrollHeight;
+    }
+    window.askAI = function(t) { document.getElementById('user-msg').value=t; window.sendMessage(); };
+
+    // --- CONFIG & IMPORT ---
+    window.exportMallaJSON = () => { navigator.clipboard.writeText(JSON.stringify(courses)); alert("Copiado!"); };
+    window.importMallaJSON = () => {
+        try {
+            const j = JSON.parse(document.getElementById('json-malla-area').value);
+            if(Array.isArray(j)) { courses=j; approved=new Set(); saveCloudData(); location.reload(); }
+        } catch(e) { alert("Error JSON"); }
+    };
+    window.loadPresetMalla = () => {
+        if(confirm("¿Resetear?")) { courses=JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES)); approved=new Set(); saveCloudData(); location.reload(); }
     };
 
-    window.removeHellEvent = function(i) {
-        deadlineEvents.splice(i, 1);
-        saveCloudData();
-        renderHellGrid();
-    };
-
-    // --- EXPORTAR FUNCIONES AL HTML ---
-    window.showPage = showPage;
-    window.toggleTheme = toggleTheme;
-    // ... mapea el resto si es necesario ...
-    // Para simplificar, como usamos window.function = ..., ya son públicas arriba.
-
-    // --- FUNCIONES LEGACY (SIMULADOR, CALCULADORA) ---
-    // (Pégalas aquí si faltan, como addGradeRow, etc. asegurando que sean window.algo)
-    
-    window.addGradeRow = function() {
-        const container = document.getElementById('grades-container');
-        const row = document.createElement('div'); row.className = 'grade-row';
-        row.innerHTML = `<input type="number" class="grade-input" placeholder="Nota"><input type="number" class="weight-input" placeholder="%"><button onclick="this.parentElement.remove()">×</button>`;
-        container.appendChild(row);
-    };
-    
-    window.calculateGrades = function() { /* ... tu lógica antigua ... */ };
-    window.initCalculator = function() { /* ... */ };
-    
-    // --- EXPORTAR PDF / ICS (Simplificado) ---
+    // --- PDF ---
     window.exportPDF = function() {
         const el = document.getElementById('export-content');
-        html2pdf().from(el).save();
+        if(el) html2pdf().from(el).save();
     };
-    window.downloadICS = function() { alert("Función disponible (Reimplementar lógica de schedule)"); }; 
-    // Nota: Copia tu lógica de downloadICS antigua aquí adentro si la quieres.
 
 </script>
+
 </body>
 </html>
