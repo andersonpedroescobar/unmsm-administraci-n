@@ -176,7 +176,7 @@
             </button>
             <p id="login-error" style="color:red; margin-top:15px; font-size:0.9rem; display:none; font-weight:bold;"></p>
         </div>
-        <div style="margin-top:20px; font-size:0.8rem; opacity:0.7;">Seguridad</div>
+        <div style="margin-top:20px; font-size:0.8rem; opacity:0.7;">Esta plataforma es una herramienta de organización personal. No es una página oficial de la universidad</div>
     </div>
     <!-- ========================================== -->
      
@@ -827,8 +827,11 @@
         initSchedule();
         initCalculator();
         updateStats();
+        
+        // --- AGREGA ESTA LÍNEA AQUÍ ---
+        initStrategy(); 
+        // ------------------------------
     }
-
     function showPage(id) {
         // 1. Ocultar todas las secciones y desactivar botones
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
@@ -1487,67 +1490,73 @@
         const text = input.value.trim();
         if(!text) return;
 
-        // 1. Mostrar mensaje del usuario en el chat
+        // 1. Mostrar mensaje del usuario
         const chat = document.getElementById('chat-history');
         const userDiv = document.createElement('div');
         userDiv.className = 'msg-user';
         userDiv.innerText = text;
         chat.appendChild(userDiv);
-        input.value = ''; // Limpiar input
+        input.value = ''; 
         chat.scrollTop = chat.scrollHeight;
 
-        // 2. Mostrar indicador de carga ("Analizando datos...")
+        // 2. Loading
         const loader = document.getElementById('ai-loading');
         loader.style.display = 'block';
 
         let responseHTML = "";
         const ctx = getGlobalContext();
 
-        // 3. Construir el Prompt para la IA (Instrucciones + Datos del Alumno)
+        // --- NUEVO: GENERAR RESUMEN DE LA MALLA PARA LA IA ---
+        // Esto crea un texto tipo: "Ciclo 1: Lenguaje, Mate I... | Ciclo 2: ..."
+        let mallaResumen = "";
+        for(let i=1; i<=10; i++) {
+            const cursosCiclo = courses.filter(c => c.c === i).map(c => c.name).join(', ');
+            mallaResumen += `[Ciclo ${i}]: ${cursosCiclo}\n`;
+        }
+        // -----------------------------------------------------
+
+        // 3. Prompt Maestro Actualizado
         const systemPrompt = `
-            Actúa como un Asesor Académico y Experto en Finanzas de la UNMSM (Universidad Nacional Mayor de San Marcos).
+            Actúa como un Asesor Académico Experto de Administración UNMSM.
             
-            CONTEXTO DEL ALUMNO:
-            - PPS (Promedio): ${ctx.promedio} | Créditos Aprobados: ${ctx.creditos}
-            - Cursos Matriculados: ${ctx.horario || "Ninguno"}
-            - Próximos Exámenes: ${ctx.examenes || "Ninguno registrado"}
-            - Habilidades: ${ctx.skills || "Ninguna registrada"}
+            INFORMACIÓN OFICIAL DE LA MALLA CURRICULAR (Plan 2023):
+            ${mallaResumen}
 
-            PREGUNTA DEL ALUMNO: "${text}"
+            DATOS DEL ALUMNO:
+            - Créditos Aprobados: ${ctx.creditos}
+            - PPS: ${ctx.promedio}
+            - Horario Actual: ${ctx.horario || "No matriculado"}
+            - Exámenes Próximos: ${ctx.examenes || "Ninguno"}
 
-            INSTRUCCIONES DE RESPUESTA:
-            - Si es sobre FINANZAS/ADMINISTRACIÓN: Explica el concepto con profundidad, usa fórmulas si aplica y pon ejemplos de empresas peruanas (Alicorp, BCP, mineras, etc).
-            - Si es sobre CONSEJOS: Analiza su carga académica (horario/exámenes) y dale un tip estratégico.
-            - Usa formato HTML simple: usa <b>negrita</b> para resaltar y <br> para saltos de línea. NO uses Markdown.
-            - Sé breve pero contundente.
+            PREGUNTA: "${text}"
+
+            INSTRUCCIONES:
+            - Responde basándote EXCLUSIVAMENTE en la "Malla Curricular" provista arriba. No inventes cursos.
+            - Si preguntan qué cursos tocan en el siguiente ciclo, revisa sus créditos y dile los del ciclo correspondiente.
+            - Usa negritas <b></b> para los nombres de cursos.
+            - Sé breve y estratégico.
         `;
 
         try {
-            // 4. Conexión a Pollinations AI (Gratis y sin Key)
-            // Codificamos el texto para enviarlo en la URL
             const encodedPrompt = encodeURIComponent(systemPrompt);
-            // Agregamos un número aleatorio (seed) para que las respuestas varíen un poco
             const randomSeed = Math.floor(Math.random() * 1000);
             
-            // Usamos el modelo de OpenAI (vía Pollinations)
             const response = await fetch(`https://text.pollinations.ai/${encodedPrompt}?model=openai&seed=${randomSeed}`);
             
-            if (!response.ok) throw new Error("Error en el servidor de IA");
+            if (!response.ok) throw new Error("Error IA");
             
             let rawText = await response.text();
             
-            // 5. Limpieza y Formato
             responseHTML = rawText
-                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Convertir negritas MD a HTML por si acaso
-                .replace(/###/g, '') // Quitar títulos grandes MD
-                .replace(/\n/g, '<br>'); // Saltos de línea
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') 
+                .replace(/###/g, '') 
+                .replace(/\n/g, '<br>');
 
         } catch (error) {
             console.error(error);
-            responseHTML = `<span style="color:#e74c3c">⚠️ La IA está saturada momentáneamente. Por favor intenta preguntar de nuevo en unos segundos.</span>`;
+            responseHTML = `<span style="color:#e74c3c">⚠️ La IA está pensando... intenta de nuevo.</span>`;
         }
 
-        // 6. Mostrar respuesta en el chat
         loader.style.display = 'none';
         addAIMessage(responseHTML);
     }
