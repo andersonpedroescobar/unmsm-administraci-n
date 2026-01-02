@@ -1363,13 +1363,14 @@
     }
 
     // ================= ANALÍTICA MODIFICADO =================
-    function renderAnalytics() {
-        // 0. SEGURIDAD: Si por alguna razón no hay etiquetas cargadas, cárgalas.
-        if (typeof customTags === 'undefined' || customTags.length === 0) {
+    // ================= ANALÍTICA REPARADA =================
+    window.renderAnalytics = function() {
+        // 1. SEGURIDAD: Si por alguna razón no hay áreas cargadas, cárgalas.
+        if (typeof customAreas === 'undefined' || customAreas.length === 0) {
             if(typeof initCustomAreas === 'function') initCustomAreas();
         }
 
-        // 1. PPS POR CICLO (Esto se mantiene igual, es el gráfico de línea)
+        // --- GRÁFICO 1: PPS HISTÓRICO (Línea) ---
         const cycleLabels = [];
         const cycleData = [];
         
@@ -1406,53 +1407,47 @@
             options: { scales: { y: { min: 10, max: 20 } }, plugins: { legend: { display: false } } }
         });
 
-        // ============================================================
-        // 2. LÓGICA DINÁMICA (RADAR Y BARRAS)
-        // ============================================================
+        // --- GRÁFICO 2 y 3: RADAR Y BARRAS (Áreas/Especialidades) ---
         
-        // Preparamos los arrays vacíos según la cantidad de áreas que existan
-        let labels = customTags.map(t => t.name); // Ej: ["Finanzas", "Marketing", "Sistemas"]
-        let colors = customTags.map(t => t.color); // Ej: ["#red", "#blue", ...]
-        let approvedCounts = new Array(customTags.length).fill(0);
-        let totalCounts = new Array(customTags.length).fill(0);
+        // Preparar datos basados en las áreas dinámicas (customAreas)
+        let labels = customAreas.map(t => t.name);
+        let colors = customAreas.map(t => t.color);
+        let approvedCounts = new Array(customAreas.length).fill(0);
+        let totalCounts = new Array(customAreas.length).fill(0);
 
-        // Recorremos todos los cursos para contar
+        // Contar cursos
         courses.forEach(c => {
-            // Si el curso tiene tags (áreas)
             if(c.tags && c.tags.length > 0) {
                 c.tags.forEach(tagId => {
-                    // Buscamos a qué índice (0, 1, 2...) pertenece este ID
-                    const index = customTags.findIndex(t => t.id === tagId);
+                    // Buscamos el índice del área correspondiente
+                    const index = customAreas.findIndex(t => t.id === tagId);
                     
-                    if(index !== -1) { // Si encontramos el área
-                        totalCounts[index]++; // Sumamos al total disponible
+                    if(index !== -1) { 
+                        totalCounts[index]++; 
                         if(approved.has(c.id)) {
-                            approvedCounts[index]++; // Sumamos al aprobado
+                            approvedCounts[index]++; 
                         }
                     }
                 });
             }
         });
 
-        // -- GRÁFICO RADAR (Especialización) --
+        // Renderizar Radar
         const ctxRadar = document.getElementById('skillsRadarChart').getContext('2d');
         if(skillsRadarInstance) skillsRadarInstance.destroy();
         
-        // Generamos colores transparentes para el fondo del radar
-        const bgColors = colors.map(c => hexToRgba(c, 0.6));
-
         skillsRadarInstance = new Chart(ctxRadar, {
             type: 'polarArea',
             data: {
-                labels: labels, // Nombres dinámicos
+                labels: labels, 
                 datasets: [{
-                    data: approvedCounts, // Datos dinámicos
-                    backgroundColor: bgColors
+                    data: approvedCounts, 
+                    backgroundColor: colors.map(c => hexToRgba(c, 0.6)) // Transparencia
                 }]
             }
         });
 
-        // -- GRÁFICO BARRAS (Avance por Área) --
+        // Renderizar Barras
         const ctxArea = document.getElementById('areaProgressChart').getContext('2d');
         if(areaProgressInstance) areaProgressInstance.destroy();
         areaProgressInstance = new Chart(ctxArea, {
@@ -1461,9 +1456,9 @@
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Cursos Aprobados',
+                        label: 'Aprobados',
                         data: approvedCounts,
-                        backgroundColor: colors // Usamos el color real del área
+                        backgroundColor: colors 
                     },
                     {
                         label: 'Total Disponibles',
@@ -1477,32 +1472,50 @@
             }
         });
 
-        // ============================================================
-        // 3. DISTRIBUCIÓN DE NOTAS (Se mantiene igual)
-        // ============================================================
+        // --- GRÁFICO 4: DISTRIBUCIÓN DE NOTAS (Pie Chart) ---
         let gradesDist = { excelente:0, bueno:0, regular:0, bajo:0 };
-        Object.values(approvedGrades).forEach(g => {
-            if(g >= 17) gradesDist.excelente++;
-            else if(g >= 14) gradesDist.bueno++;
-            else if(g >= 11) gradesDist.regular++;
-            else gradesDist.bajo++;
-        });
+        let hasGrades = false;
+
+        // Verificar si hay notas reales
+        if(approvedGrades && Object.keys(approvedGrades).length > 0) {
+            Object.values(approvedGrades).forEach(g => {
+                hasGrades = true; // Marcamos que sí hay notas
+                if(g >= 17) gradesDist.excelente++;
+                else if(g >= 14) gradesDist.bueno++;
+                else if(g >= 11) gradesDist.regular++;
+                else gradesDist.bajo++;
+            });
+        }
 
         const ctxGrades = document.getElementById('gradesDistChart').getContext('2d');
         if(gradesDistInstance) gradesDistInstance.destroy();
+        
+        // Si no hay notas, mostramos un gráfico gris "vacío" para que no se vea feo
+        const chartData = hasGrades 
+            ? [gradesDist.excelente, gradesDist.bueno, gradesDist.regular, gradesDist.bajo]
+            : [1]; // Dato dummy para que se pinte el círculo
+            
+        const chartColors = hasGrades
+            ? ['#27ae60', '#f1c40f', '#e67e22', '#c0392b']
+            : ['#eeeeee']; // Gris
+
+        const chartLabels = hasGrades
+            ? ['Excelente (17-20)', 'Bueno (14-16)', 'Regular (11-13)', 'Bajo (<11)']
+            : ['Sin notas registradas'];
+
         gradesDistInstance = new Chart(ctxGrades, {
             type: 'pie',
             data: {
-                labels: ['Excelente (17-20)', 'Bueno (14-16)', 'Regular (11-13)', 'Bajo (<11)'],
+                labels: chartLabels,
                 datasets: [{
-                    data: [gradesDist.excelente, gradesDist.bueno, gradesDist.regular, gradesDist.bajo],
-                    backgroundColor: ['#27ae60', '#f1c40f', '#e67e22', '#c0392b']
+                    data: chartData,
+                    backgroundColor: chartColors
                 }]
             }
         });
-    }
+    };
 
-    // FUNCIÓN AUXILIAR (Pégala aquí mismo o al final del script)
+    // FUNCIÓN AUXILIAR 
     // Convierte colores Hex (#ff0000) a RGBA con transparencia
     function hexToRgba(hex, alpha) {
         // Manejo básico de errores si el color no es hex válido
@@ -1587,40 +1600,55 @@
         for(let i=7; i<=22; i++) { let t = (i<10?'0':'')+i+':00'; s.innerHTML+=`<option value="${i}">${t}</option>`; if(i>7) e.innerHTML+=`<option value="${i}">${t}</option>`; }
         e.value = 10; renderScheduleGrid(); renderScheduleItems();
     }
-    function updateScheduleDropdowns() {
+    window.updateScheduleDropdowns = function() {
         const sel = document.getElementById('sched-course');
-        const filterVal = document.getElementById('sched-cycle-filter').value; // Nuevo filtro
+        const cycleFilter = document.getElementById('sched-cycle-filter').value;
         
+        // 1. Limpiar completamente el selector visualmente
         sel.innerHTML = '';
         
-        // 1. Filtrar cursos disponibles (No aprobados O aprobados pero repetibles en simulador)
-        // Nota: Permitimos ver todos, incluso si no cumplen requisitos, para simular libremente,
-        // pero puedes descomentar la restricción de requisitos si prefieres ser estricto.
-        let avail = courses.filter(c => !approved.has(c.id)); 
+        // 2. Crear opción por defecto temporal
+        const loadingOpt = document.createElement('option');
+        loadingOpt.text = "Cargando...";
+        sel.add(loadingOpt);
 
-        // 2. Aplicar Filtro de Ciclo
-        if(filterVal !== 'all') {
-            avail = avail.filter(c => c.c == filterVal);
+        // 3. Filtrar la lista de cursos
+        // Mostramos cursos NO aprobados.
+        // Opcional: Si quieres que SOLO muestre los que cumplen requisitos, descomenta la parte de &&
+        let avail = courses.filter(c => 
+            !approved.has(c.id) 
+            // && (c.req.length === 0 || c.req.every(r => approved.has(r))) 
+        );
+
+        // 4. Aplicar el filtro de ciclo
+        if(cycleFilter !== 'all') {
+            avail = avail.filter(c => c.c == cycleFilter);
         }
 
+        // 5. Limpiar y llenar con datos reales
+        sel.innerHTML = ''; // Borramos el "Cargando..."
+        
         if(avail.length === 0) {
-            sel.innerHTML = '<option disabled selected>No hay cursos en este ciclo</option>';
+            const opt = document.createElement('option');
+            opt.text = "No hay cursos en este filtro";
+            opt.disabled = true;
+            opt.selected = true;
+            sel.add(opt);
         } else {
             // Ordenar alfabéticamente
             avail.sort((a, b) => a.name.localeCompare(b.name));
             
             avail.forEach(c => {
-                // Verificamos si ya está en el horario solo para poner un emoji, NO para bloquearlo
                 const count = mySchedule.filter(s => s.courseId === c.id).length;
                 const mark = count > 0 ? `(${count}) ` : ''; 
                 
-                // ELIMINADO EL ATRIBUTO 'disabled' PARA PERMITIR MULTIPLES HORARIOS
-                sel.innerHTML += `<option value="${c.id}">
-                    ${mark}${c.name} (${c.cr} Cr.)
-                </option>`;
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.text = `${mark}${c.name} (${c.cr} Cr.)`;
+                sel.add(opt);
             });
         }
-    }
+    };
     function renderScheduleGrid() {
         const grid = document.getElementById('schedule-grid');
         while(grid.children.length > 7) grid.removeChild(grid.lastChild);
@@ -2171,7 +2199,11 @@
                 
                 // Leer Requisitos
                 const reqSelect = card.querySelector('.b-req');
-                const selectedReqs = Array.from(reqSelect.selectedOptions).map(opt => opt.value);
+                let selectedReqs = Array.from(reqSelect.selectedOptions).map(opt => opt.value);
+                
+                // CORRECCIÓN IMPORTANTE: Filtrar valores vacíos
+                // Esto elimina cualquier "" que se haya colado si seleccionaste "-- Sin Requisito --"
+                selectedReqs = selectedReqs.filter(r => r !== "" && r !== null);
 
                 // Leer Área
                 const areaSelect = card.querySelector('.b-area');
@@ -2179,29 +2211,24 @@
                 const tags = areaVal ? [areaVal] : [];
 
                 if(name) {
-                    // Generar ID único
                     const id = name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) + '_' + i;
-                    
                     newCourses.push({
                         id: id, name: name, cr: cr, c: i, t: type,
-                        req: selectedReqs, 
+                        req: selectedReqs, // Ahora va limpio
                         tags: tags         
                     });
                 }
             });
         }
 
-        if(newCourses.length === 0) return alert("La malla está vacía. Agrega al menos un curso.");
+        if(newCourses.length === 0) return alert("La malla está vacía.");
 
         if(confirm("¿Guardar esta nueva carrera? Se reiniciarán tus notas actuales.")) {
-            courses = newCourses; // Actualizamos la variable global
-            
-            // Guardamos en memoria
+            courses = newCourses;
             localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
-            // También guardamos las áreas personalizadas actuales
             localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
 
-            // Reiniciar progreso para evitar bugs con cursos antiguos
+            // Reiniciar progreso
             approved = new Set();
             approvedGrades = {};
             localStorage.removeItem('unmsm_adm_v11_c');
