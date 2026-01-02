@@ -187,9 +187,7 @@
             <span>Administración UNMSM</span>
         </div>
         <div class="nav-menu">
-            <!-- Botón Configuración (NUEVO) -->
-            <button class="nav-btn" onclick="showPage('config')"><span class="material-icons">settings_suggest</span> Mi Carrera</button>
-            
+            <button class="nav-btn" onclick="showPage('config')"><span class="material-icons">school</span> Mi Carrera</button>
             <button class="nav-btn" onclick="showPage('estrategia')"><span class="material-icons">psychology_alt</span> Estrategia IA</button>
             <button class="nav-btn active" onclick="showPage('malla')"><span class="material-icons">grid_view</span> Malla</button>
             <button class="nav-btn" onclick="showPage('progreso')"><span class="material-icons">trending_up</span> Progreso</button>
@@ -198,9 +196,7 @@
             <button class="nav-btn" onclick="showPage('skills')"><span class="material-icons">psychology</span> Skills</button>
             <button class="nav-btn" onclick="showPage('simulador')"><span class="material-icons">schedule</span> Simulador</button>
             <button class="nav-btn" onclick="showPage('recursos')"><span class="material-icons">link</span> Recursos</button>
-            
-            <!-- Botón Salir (NUEVO) -->
-            <button class="nav-btn" style="background:#c0392b;" onclick="logout()"><span class="material-icons">logout</span></button>
+            <button class="icon-btn" onclick="toggleTheme()" title="Modo Oscuro"><span class="material-icons">dark_mode</span></button>
         </div>
     </nav>
 
@@ -429,6 +425,39 @@
         </div>
     </div>
 
+    <!-- PÁGINA: MI CARRERA (CONFIGURACIÓN) -->
+    <div id="page-config" class="page-section">
+        <div style="max-width:800px; margin:0 auto;">
+            <h2 style="text-align:center;">Configuración de Carrera</h2>
+            <p style="text-align:center; color:#666;">Por defecto estás en <b>Administración</b>. Aquí puedes cambiar a otra carrera importando su código.</p>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:30px;">
+                
+                <!-- REINICIAR A ADMINISTRACIÓN -->
+                <div class="stats-card">
+                    <h3>🔄 Restaurar Administración</h3>
+                    <p style="font-size:0.9rem;">Si cambiaste de carrera y quieres volver a la original (FCA - Plan 2023).</p>
+                    <button class="btn-add" style="background:#8a0303;" onclick="restoreAdminMalla()">Volver a Administración</button>
+                </div>
+
+                <!-- IMPORTAR OTRA CARRERA -->
+                <div class="stats-card">
+                    <h3>📥 Importar Nueva Malla</h3>
+                    <p style="font-size:0.9rem;">Pega aquí el código JSON de tu carrera (Ingeniería, Contabilidad, etc).</p>
+                    <textarea id="json-import-area" style="width:100%; height:100px; border:1px solid #ccc; border-radius:6px; font-family:monospace; font-size:0.8rem; margin-bottom:10px;" placeholder='[{"id":"FIS1", "name":"Física I", "cr":4, "c":1...}]'></textarea>
+                    <button class="btn-export" style="width:100%; justify-content:center;" onclick="importCustomMalla()">Cargar Carrera</button>
+                </div>
+            </div>
+
+            <!-- EXPORTAR (COMPARTIR) -->
+            <div style="margin-top:30px; padding:20px; background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                <h3>📤 Compartir esta Malla</h3>
+                <p>Copia este código y pásaselo a tus compañeros para que tengan la misma carrera.</p>
+                <button class="btn-export btn-ics" onclick="exportCurrentMalla()">Copiar Código al Portapapeles</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PÁGINA 7: ESTRATEGIA & IA (NUEVO) -->
     <div id="page-estrategia" class="page-section">
         <h2 style="text-align:center; margin-bottom:10px;">Planificación Estratégica & Asistente Virtual</h2>
@@ -490,7 +519,7 @@
                 <div id="chat-history" class="chat-area">
                     <div class="msg-ai">
                         Hola, colega. Soy tu asistente académico UNMSM.<br>
-                        Puedo analizar tu <b>Mapa de Calor</b>, tus <b>Notas</b> y resolver dudas.
+                        Puedo analizar tu <b>Mapa de Calor</b>, tus <b>Notas</b> y resolver dudas complejas de Finanzas o Gestión.
                     </div>
                 </div>
 
@@ -581,135 +610,21 @@
         }
     </style>
 
-    <!-- ========================================== -->
-    <!-- PÁGINA 8: KANBAN EMPLEABILIDAD (CHAMBA)    -->
-    <!-- ========================================== -->
-    <div id="page-kanban" class="page-section">
-        <h2 style="text-align:center; margin-bottom:10px;">Gestor de Postulaciones Laborales</h2>
-        <p style="text-align:center; color:#666; margin-bottom:30px;">Organiza tu búsqueda de prácticas pre y profesionales.</p>
-
-        <!-- Formulario Rápido -->
-        <div style="background:var(--bg-card); padding:20px; border-radius:12px; margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:end; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-            <div style="flex:1; min-width:200px;">
-                <label class="form-label">Empresa</label>
-                <input type="text" id="job-company" class="form-select" placeholder="Ej: BCP, Alicorp...">
-            </div>
-            <div style="flex:1; min-width:200px;">
-                <label class="form-label">Puesto</label>
-                <input type="text" id="job-role" class="form-select" placeholder="Ej: Practicante de Finanzas">
-            </div>
-            <div style="flex:1; min-width:150px;">
-                <label class="form-label">Plataforma</label>
-                <select id="job-source" class="form-select">
-                    <option>LinkedIn</option>
-                    <option>Computrabajo</option>
-                    <option>Bolsa UNMSM</option>
-                    <option>Referido</option>
-                </select>
-            </div>
-            <button class="btn-add" style="width:auto; min-width:120px;" onclick="addJob()">POSTULAR</button>
-        </div>
-
-        <!-- Tablero Kanban -->
-        <div class="kanban-board">
-            <!-- Columna 1 -->
-            <div class="kanban-col">
-                <div class="col-header header-todo">📝 Por Postular</div>
-                <div id="col-todo" class="col-body"></div>
-            </div>
-            <!-- Columna 2 -->
-            <div class="kanban-col">
-                <div class="col-header header-process">⏳ En Proceso</div>
-                <div id="col-process" class="col-body"></div>
-            </div>
-            <!-- Columna 3 -->
-            <div class="kanban-col">
-                <div class="col-header header-offer">🎉 Oferta / Ingreso</div>
-                <div id="col-offer" class="col-body"></div>
-            </div>
-            <!-- Columna 4 -->
-            <div class="kanban-col">
-                <div class="col-header header-reject">❌ Rechazado</div>
-                <div id="col-reject" class="col-body"></div>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        /* ESTILOS DEL KANBAN */
-        .kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; min-height: 500px; }
-        .kanban-col { background: rgba(0,0,0,0.03); border-radius: 8px; display: flex; flex-direction: column; }
-        .col-header { padding: 15px; font-weight: bold; color: white; border-radius: 8px 8px 0 0; text-align: center; }
-        .col-body { padding: 10px; flex: 1; min-height: 100px; }
-        
-        .header-todo { background: #7f8c8d; }
-        .header-process { background: #f39c12; }
-        .header-offer { background: #27ae60; }
-        .header-reject { background: #c0392b; }
-
-        .job-card { background: var(--bg-card); padding: 15px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid #333; position: relative; animation: fadeIn 0.3s; transition: transform 0.2s; }
-        .job-card:hover { transform: translateY(-2px); }
-        .job-company { font-weight: bold; font-size: 1rem; }
-        .job-role { font-size: 0.85rem; color: #666; margin-bottom: 5px; }
-        .job-source { font-size: 0.75rem; background: #eee; padding: 2px 6px; border-radius: 4px; display: inline-block; color: #555; }
-        .btn-move-group { margin-top: 10px; display: flex; justify-content: space-between; gap: 5px; }
-        .btn-move { border: none; background: none; cursor: pointer; color: var(--text-main); font-size: 1.1rem; padding: 2px; border-radius:4px; }
-        .btn-move:hover { background: rgba(0,0,0,0.1); }
-        .btn-delete-job { position: absolute; top: 10px; right: 10px; color: #999; cursor: pointer; border: none; background: none; font-weight:bold; }
-        .btn-delete-job:hover { color: red; }
-    </style>
-
-    <!-- ========================================== -->
-    <!-- PÁGINA 9: CONFIGURACIÓN (MULTI-CARRERA)    -->
-    <!-- ========================================== -->
-    <div id="page-config" class="page-section">
-        <div style="max-width:800px; margin:0 auto;">
-            <h2 style="text-align:center;">Gestión de Carrera & Malla</h2>
-            <p style="text-align:center; color:#666;">Cambia de carrera, crea tu propia malla o importa la de un amigo. <br><b>Nota:</b> Al cambiar de malla, tus notas se adaptarán o reiniciarán.</p>
-
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-top:30px;">
-                
-                <!-- OPCIÓN 1: CARGAR MALLA EXISTENTE -->
-                <div class="stats-card">
-                    <h3>📂 Cargar Malla Oficial</h3>
-                    <p style="font-size:0.9rem; color:#666;">Carreras precargadas en el sistema.</p>
-                    <select id="preset-career" class="form-select" style="margin-bottom:15px;">
-                        <option value="admin">Administración (FCA - 2023)</option>
-                        <option value="conta">Contabilidad (Ejemplo)</option>
-                        <option value="ing_ind">Ingeniería Industrial (Ejemplo)</option>
-                    </select>
-                    <button class="btn-add" onclick="loadPresetMalla()">Cargar Carrera</button>
-                </div>
-
-                <!-- OPCIÓN 2: IMPORTAR / EXPORTAR -->
-                <div class="stats-card">
-                    <h3>🔄 Compartir Malla (JSON)</h3>
-                    <p style="font-size:0.9rem; color:#666;">Copia tu malla para dársela a un amigo o pega una aquí.</p>
-                    <textarea id="json-malla-area" style="width:100%; height:80px; border:1px solid #ccc; border-radius:6px; font-family:monospace; font-size:0.8rem; margin-bottom:10px; padding:5px;" placeholder='[{"id":"CURSO1", "name":"..."}]'></textarea>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-export" style="margin:0; flex:1;" onclick="importMallaJSON()">📥 Importar</button>
-                        <button class="btn-export btn-ics" style="margin:0; flex:1;" onclick="exportMallaJSON()">📤 Copiar Malla</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- VISUALIZADOR DE DATOS DE LA CUENTA -->
-            <div style="margin-top:30px; padding:20px; background:#e3f2fd; border-radius:12px; border:1px solid #90caf9; color:#0d47a1;">
-                <h3 style="margin-top:0;">☁️ Sincronización en la Nube</h3>
-                <p>Conectado como: <b id="user-email-display">...</b></p>
-                <p style="font-size:0.9rem;">Tus datos (Notas, Malla, Empleabilidad) se guardan automáticamente en Google Cloud. Puedes entrar desde tu celular y verás lo mismo que en tu PC.</p>
-            </div>
-        </div>
-    </div>
-
 <script type="module">
-    // =================================================================
-    // 1. CONFIGURACIÓN FIREBASE
-    // =================================================================
+    // ================= SEGURIDAD FIREBASE (TUS CLAVES) =================
+    
+    // 1. IMPORTAR FIREBASE DESDE LA NUBE (CDN)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // 2. TU LISTA BLANCA (MODIFICAR LOS CORREOS REALES)
+    const ALLOWED_EMAILS = [
+        "andersonpedroescobar292@gmail.com",
+        "dianapinarez@gmail.com" ,
+        "20231490@lamolina.edu.pe"
+    ];
+
+    // 3. CONFIGURACIÓN 
     const firebaseConfig = {
         apiKey: "AIzaSyDBq8ExQaOE1QLdVqedmesz1jxdwv2dR5Y",
         authDomain: "unmsm-administracion.firebaseapp.com",
@@ -720,33 +635,75 @@
         measurementId: "G-16KXE5N8ZD"
     };
 
-    const ALLOWED_EMAILS = [
-        "andersonpedroescobar292@gmail.com",
-        "20231490@lamolina.edu.pe"
-    ];
-
+    // 4. INICIALIZAR
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
-    let currentUser = null;
 
-    // =================================================================
-    // 2. DATOS DE CARRERA (MALLA ADMINISTRACIÓN)
-    // =================================================================
-    const DEFAULT_ADMIN_COURSES = [
+    // 5. FUNCIÓN DE LOGIN
+    const loginBtn = document.getElementById('google-login-btn');
+    if(loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    checkUserAccess(result.user);
+                })
+                .catch((error) => {
+                    console.error("Error Login:", error);
+                    showError("Error de conexión con Google.");
+                });
+        });
+    }
+
+    // 6. VERIFICAR PERMISOS
+    function checkUserAccess(user) {
+        // Convertimos a minúsculas para evitar errores
+        if (ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
+            // ¡ACCESO CONCEDIDO!
+            const overlay = document.getElementById('login-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+            console.log("Bienvenido: " + user.email);
+        } else {
+            // ¡ACCESO DENEGADO!
+            showError(`🚫 Acceso Denegado. El correo ${user.email} no está autorizado.`);
+            signOut(auth); // Cerrar sesión forzosamente
+        }
+    }
+
+    function showError(msg) {
+        const err = document.getElementById('login-error');
+        err.innerText = msg;
+        err.style.display = 'block';
+    }
+
+    // 7. PERSISTENCIA (Para que no pida login a cada rato)
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            checkUserAccess(user);
+        }
+    });
+
+    // ================= FIN CÓDIGO FIREBASE =================
+
+    // ================= DATA =================
+    // 1. MALLA BASE (ADMINISTRACIÓN) - Se usa si no hay otra cargada
+    const ADMIN_MALLA = [
+        // CICLO 1
         {id:'EGO1O1', name:'Lenguaje', cr:4, c:1, t:'O', req:[], tags:[]},
         {id:'EGO1O2', name:'Métodos de Estudio Universitario', cr:3, c:1, t:'O', req:[], tags:[]},
         {id:'EGO1O3', name:'Historia del Perú', cr:3, c:1, t:'O', req:[], tags:[]},
         {id:'EGO1O4', name:'Matemática I', cr:4, c:1, t:'O', req:[], tags:['fin']},
         {id:'EGO1O5', name:'Desarrollo Personal', cr:3, c:1, t:'O', req:[], tags:['rrhh']},
         {id:'EGO1O6', name:'Inglés I', cr:2, c:1, t:'O', req:[], tags:[]},
+        // CICLO 2
         {id:'EGO2O1', name:'Investigación Académica', cr:3, c:2, t:'O', req:[], tags:[]},
         {id:'EGO2O2', name:'Filosofía y Ética', cr:3, c:2, t:'O', req:[], tags:[]},
         {id:'EGO2O3', name:'Realidad Nacional y Mundial', cr:3, c:2, t:'O', req:[], tags:[]},
         {id:'EGO2O4', name:'Matemática II', cr:4, c:2, t:'O', req:['EGO1O4'], tags:['fin']},
         {id:'EGO2O5', name:'Derechos Fundamentales', cr:3, c:2, t:'O', req:[], tags:[]},
         {id:'EGO2O6', name:'Inglés II', cr:2, c:2, t:'O', req:['EGO1O6'], tags:[]},
+        // CICLO 3
         {id:'ADO23301', name:'Estadística Descriptiva', cr:4, c:3, t:'O', req:[], tags:['mkt']},
         {id:'ADO23302', name:'Microeconomía', cr:3, c:3, t:'O', req:[], tags:['fin']},
         {id:'ADO23303', name:'Visión para el Desarrollo', cr:3, c:3, t:'O', req:['EGO2O1'], tags:[]},
@@ -754,6 +711,7 @@
         {id:'ADO23305', name:'TICs para la Gestión', cr:3, c:3, t:'O', req:[], tags:['op']},
         {id:'ADO23306', name:'Fundamentos de Contabilidad', cr:3, c:3, t:'O', req:[], tags:['fin']},
         {id:'ADO23307', name:'Desarrollo Sostenible', cr:2, c:3, t:'O', req:[], tags:[]},
+        // CICLO 4
         {id:'ADO23401', name:'Estadística Inferencial', cr:4, c:4, t:'O', req:['ADO23301'], tags:['mkt']},
         {id:'ADO23402', name:'Macroeconomía', cr:3, c:4, t:'O', req:['ADO23302'], tags:['fin']},
         {id:'ADO23403', name:'Derecho Empresarial', cr:3, c:4, t:'O', req:[], tags:['op']},
@@ -761,6 +719,7 @@
         {id:'ADO23405', name:'Procesos Administrativos', cr:4, c:4, t:'O', req:['ADO23304'], tags:['op']},
         {id:'ADO23406', name:'Costos y Presupuestos', cr:3, c:4, t:'O', req:['ADO23306'], tags:['fin']},
         {id:'ADO23407', name:'Matemática Financiera', cr:4, c:4, t:'O', req:[], tags:['fin']},
+        // CICLO 5
         {id:'ADO23501', name:'Derecho Laboral', cr:2, c:5, t:'O', req:['ADO23403'], tags:['rrhh']},
         {id:'ADO23502', name:'Administración de la Calidad', cr:3, c:5, t:'O', req:['ADO23405'], tags:['op']},
         {id:'ADO23503', name:'Fundamentos del Talento Humano', cr:3, c:5, t:'O', req:[], tags:['rrhh']},
@@ -769,6 +728,7 @@
         {id:'ADO23506', name:'Fundamentos de Marketing', cr:3, c:5, t:'O', req:[], tags:['mkt']},
         {id:'ADO23507', name:'Cadenas de Suministros', cr:3, c:5, t:'O', req:[], tags:['op']},
         {id:'ADO23508', name:'Emprendimiento e Innovación', cr:3, c:5, t:'O', req:[], tags:['op']},
+        // CICLO 6
         {id:'ADE23601', name:'Reclutamiento y Selección', cr:3, c:6, t:'E', req:['ADO23503'], tags:['rrhh']},
         {id:'ADE23602', name:'Seguridad y Salud en el Trabajo', cr:3, c:6, t:'E', req:[], tags:['rrhh']},
         {id:'ADE23603', name:'Finanzas Corporativas II', cr:3, c:6, t:'E', req:['ADO23504'], tags:['fin']},
@@ -782,6 +742,7 @@
         {id:'ADO23603', name:'Derecho Tributario', cr:2, c:6, t:'O', req:['ADO23501'], tags:['fin']},
         {id:'ADO23604', name:'Técnicas de Inv. Cualitativa', cr:3, c:6, t:'O', req:['ADO23404'], tags:['mkt', 'rrhh']},
         {id:'ADO23605', name:'Reestructuración Empresarial', cr:3, c:6, t:'O', req:['ADO23502'], tags:['op']},
+        // CICLO 7
         {id:'ADE23701', name:'Capacitación y Desarrollo Talento', cr:3, c:7, t:'E', req:['ADE23601'], tags:['rrhh']},
         {id:'ADE237010', name:'Aprovisionamiento y Negociación', cr:3, c:7, t:'E', req:[], tags:['op']},
         {id:'ADE23702', name:'Gestión Clima y Cultura Org.', cr:3, c:7, t:'E', req:[], tags:['rrhh']},
@@ -795,6 +756,7 @@
         {id:'ADO23701', name:'Negocios Internacionales', cr:4, c:7, t:'O', req:[], tags:['op', 'fin']},
         {id:'ADO23702', name:'Técnicas de Inv. Cuantitativa', cr:3, c:7, t:'O', req:['ADO23604'], tags:['mkt']},
         {id:'ADO23703', name:'Prospectiva Empresarial', cr:3, c:7, t:'O', req:['ADO23605'], tags:['op']},
+        // CICLO 8
         {id:'ADE23801', name:'Evaluación del Desempeño', cr:3, c:8, t:'E', req:['ADE23701'], tags:['rrhh']},
         {id:'ADE238010', name:'Gestión Almacenes e Inventarios', cr:3, c:8, t:'E', req:[], tags:['op']},
         {id:'ADE23802', name:'Inteligencia Emocional y Social', cr:3, c:8, t:'E', req:[], tags:['rrhh']},
@@ -809,6 +771,7 @@
         {id:'ADO23802', name:'Proyecto de Investigación', cr:3, c:8, t:'O', req:['ADO23702'], tags:['op']},
         {id:'ADO23803', name:'Planeamiento Estratégico', cr:3, c:8, t:'O', req:['ADO23703'], tags:['op']},
         {id:'ADO23804', name:'Gestión Pública', cr:3, c:8, t:'O', req:[], tags:['op']},
+        // CICLO 9
         {id:'ADE23901', name:'Valoración Puestos/Compensaciones', cr:3, c:9, t:'E', req:['ADE23801'], tags:['rrhh']},
         {id:'ADE23902', name:'Gestión Talento Sector Público', cr:3, c:9, t:'E', req:[], tags:['rrhh']},
         {id:'ADE23903', name:'Gestión Riesgos Financieros', cr:3, c:9, t:'E', req:['ADE23803'], tags:['fin']},
@@ -822,6 +785,7 @@
         {id:'ADO23902', name:'Dirección Estratégica', cr:3, c:9, t:'O', req:['ADO23803'], tags:['op']},
         {id:'ADO23903', name:'Des. y Lanzamiento Nuevos Prod.', cr:3, c:9, t:'O', req:[], tags:['mkt']},
         {id:'ADO23904', name:'Cadena de Valor', cr:3, c:9, t:'O', req:[], tags:['op']},
+        // CICLO 10
         {id:'ADE23101', name:'Gerencia Estratégica Talento', cr:3, c:10, t:'E', req:['ADE23901'], tags:['rrhh']},
         {id:'ADE23102', name:'Auditoría Gestión Talento', cr:3, c:10, t:'E', req:[], tags:['rrhh']},
         {id:'ADE23103', name:'Dirección Financiera', cr:3, c:10, t:'E', req:['ADE23903'], tags:['fin']},
@@ -834,456 +798,909 @@
         {id:'ADO23102', name:'Gerencia General y Alta Dir.', cr:3, c:10, t:'O', req:['ADO23902'], tags:['op']},
         {id:'ADO23103', name:'Gestión de PYMES', cr:3, c:10, t:'O', req:[], tags:['op']}
     ];
-
+    // 2. VARIABLE DINÁMICA (Esta es la que usará el sistema)
     let courses = []; 
+
+    // Al iniciar, decidimos qué malla usar
+    if (localStorage.getItem('lumin_custom_malla')) {
+        // Si el alumno cargó otra carrera (ej: Sistemas), usamos esa
+        courses = JSON.parse(localStorage.getItem('lumin_custom_malla'));
+    } else {
+        // Si es nuevo o es de Admin, usamos la base
+        courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
+    }
+
+    const skillsDB = [
+        { id: 'excel_adv', name: 'Excel Avanzado (Macros)', weights: { fin: 3, op: 3, mkt: 2, rrhh: 2 } },
+        { id: 'power_bi', name: 'Power BI / Tableau', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 } },
+        { id: 'sql', name: 'SQL para Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 1 } },
+        { id: 'python', name: 'Python (Analítica)', weights: { fin: 3, op: 2, mkt: 2, rrhh: 1 } },
+        { id: 'ingles', name: 'Inglés de Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 } },
+        { id: 'mat_fin', name: 'Matemática Financiera', weights: { fin: 3, op: 1 } },
+        { id: 'estados_fin', name: 'Análisis Estados Fin.', weights: { fin: 3, op: 1 } },
+        { id: 'bolsa', name: 'Bolsa de Valores', weights: { fin: 3 } },
+        { id: 'econometria', name: 'Econometría', weights: { fin: 3, mkt: 1 } },
+        { id: 'sap_fi', name: 'SAP FI/CO', weights: { fin: 3, op: 1 } },
+        { id: 'riesgos', name: 'Gestión de Riesgos', weights: { fin: 3, op: 2 } },
+        { id: 'bloomberg', name: 'Bloomberg Terminal', weights: { fin: 3 } },
+        { id: 'fintech', name: 'Fintech & Blockchain', weights: { fin: 2, mkt: 1 } },
+        { id: 'inv_merc', name: 'Investigación Mercados', weights: { mkt: 3, op: 1 } },
+        { id: 'seo_sem', name: 'SEO/SEM (Google Ads)', weights: { mkt: 3 } },
+        { id: 'branding', name: 'Branding', weights: { mkt: 3 } },
+        { id: 'analytics', name: 'Google Analytics 4', weights: { mkt: 3, op: 1 } },
+        { id: 'crm', name: 'CRM (Salesforce/HubSpot)', weights: { mkt: 3, op: 1, fin: 1 } },
+        { id: 'neuromkt', name: 'Neuromarketing', weights: { mkt: 3 } },
+        { id: 'design', name: 'Design Thinking', weights: { mkt: 2, op: 2, rrhh: 1 } },
+        { id: 'social_ads', name: 'Facebook/Meta Ads', weights: { mkt: 3 } },
+        { id: 'seleccion', name: 'Selección y Reclutamiento', weights: { rrhh: 3 } },
+        { id: 'legislacion', name: 'Legislación Laboral', weights: { rrhh: 3, op: 1 } },
+        { id: 'clima', name: 'Clima y Cultura Org.', weights: { rrhh: 3 } },
+        { id: 'capacitacion', name: 'Capacitación', weights: { rrhh: 3 } },
+        { id: 'planillas', name: 'Planillas (PLAME)', weights: { rrhh: 3, fin: 1 } },
+        { id: 'linkedin', name: 'LinkedIn Recruiter', weights: { rrhh: 3 } },
+        { id: 'sst', name: 'Seguridad y Salud (SST)', weights: { rrhh: 3, op: 2 } },
+        { id: 'people_analytics', name: 'People Analytics', weights: { rrhh: 3, op: 1 } },
+        { id: 'supply', name: 'Supply Chain Mgmt', weights: { op: 3, mkt: 1, fin: 1 } },
+        { id: 'bpm', name: 'Procesos BPM (Bizagi)', weights: { op: 3 } },
+        { id: 'planeamiento', name: 'Planeamiento Estratégico', weights: { op: 3, fin: 1, mkt: 1, rrhh: 1 } },
+        { id: 'gestion_pub', name: 'Gestión Pública (SIAF)', weights: { op: 3 } },
+        { id: 'pmi', name: 'Gestión Proyectos (PMI)', weights: { op: 3, fin: 1 } },
+        { id: 'sap_mm', name: 'SAP MM/SD', weights: { op: 3 } },
+        { id: 'logistica', name: 'Logística Internacional', weights: { op: 3 } },
+        { id: 'six_sigma', name: 'Lean Six Sigma', weights: { op: 3 } }
+    ];
+
     let approved = new Set();
     let approvedGrades = {}; 
     let acquiredSkills = new Set();
     let mySchedule = []; 
-    let deadlineEvents = [];
-    let jobApplications = [];
+    let chartInstance = null;
+    let ppsChartInstance = null;
+    let skillsRadarInstance = null;
+    let areaProgressInstance = null;
+    let gradesDistInstance = null;
 
-    // =================================================================
-    // 3. LOGICA FIREBASE Y LOGIN
-    // =================================================================
-    const loginBtn = document.getElementById('google-login-btn');
-    if(loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(err => alert("Error: " + err.message));
-        });
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            if (ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
-                currentUser = user;
-                document.getElementById('login-overlay').style.display = 'none';
-                if(document.getElementById('user-email-display')) {
-                    document.getElementById('user-email-display').innerText = user.email;
-                }
-                await loadCloudData();
-                initApp();
-            } else {
-                alert("Correo no autorizado.");
-                signOut(auth);
-            }
-        } else {
-            document.getElementById('login-overlay').style.display = 'flex';
-        }
-    });
-
-    window.logout = () => { if(confirm("¿Salir?")) signOut(auth).then(()=>location.reload()); };
-
-    async function saveCloudData() {
-        if(!currentUser) return;
-        const userRef = doc(db, "users", currentUser.email);
-        const data = {
-            courses: JSON.stringify(courses),
-            approved: JSON.stringify([...approved]),
-            grades: JSON.stringify(approvedGrades),
-            skills: JSON.stringify([...acquiredSkills]),
-            schedule: JSON.stringify(mySchedule),
-            deadlines: JSON.stringify(deadlineEvents),
-            jobs: JSON.stringify(jobApplications)
-        };
-        try { await setDoc(userRef, data, { merge: true }); } 
-        catch (e) { console.error("Error guardando:", e); }
-    }
-
-    async function loadCloudData() {
-        try {
-            const docSnap = await getDoc(doc(db, "users", currentUser.email));
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                courses = data.courses ? JSON.parse(data.courses) : JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES));
-                approved = data.approved ? new Set(JSON.parse(data.approved)) : new Set();
-                approvedGrades = data.grades ? JSON.parse(data.grades) : {};
-                acquiredSkills = data.skills ? new Set(JSON.parse(data.skills)) : new Set();
-                mySchedule = data.schedule ? JSON.parse(data.schedule) : [];
-                deadlineEvents = data.deadlines ? JSON.parse(data.deadlines) : [];
-                jobApplications = data.jobs ? JSON.parse(data.jobs) : [];
-            } else {
-                courses = JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES));
-                await saveCloudData();
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Error de conexión con la base de datos. Revisa la consola.");
-        }
-    }
-
-    // =================================================================
-    // 4. FUNCIONALIDADES DE LA APP
-    // =================================================================
-
-    function initApp() {
+    // ================= INIT =================
+    function init() {
+        if(localStorage.getItem('unmsm_adm_v11_c')) approved = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_c')));
+        if(localStorage.getItem('unmsm_adm_v11_g')) approvedGrades = JSON.parse(localStorage.getItem('unmsm_adm_v11_g'));
+        if(localStorage.getItem('unmsm_adm_v11_s')) acquiredSkills = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_s')));
+        if(localStorage.getItem('unmsm_adm_v11_h')) mySchedule = JSON.parse(localStorage.getItem('unmsm_adm_v11_h'));
+        if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        
         renderMalla();
         renderSkills();
-        renderHellGrid();
-        renderKanban();
         initSchedule();
         initCalculator();
         updateStats();
+        
+        // --- AGREGA ESTA LÍNEA AQUÍ ---
+        initStrategy(); 
+        // ------------------------------
     }
-
-    // --- NAVIGATION ---
-    window.showPage = function(id) {
+    function showPage(id) {
+        // 1. Ocultar todas las secciones y desactivar botones
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        
+        // 2. Mostrar la sección seleccionada
         document.getElementById('page-'+id).classList.add('active');
         
+        // 3. Activar el botón correcto (CORREGIDO EL ORDEN)
+        
         const map = {
-            'config': 0,
-            'estrategia': 1,
-            'malla': 2,
-            'progreso': 3,
+            'config': 0,      // El botón nuevo (Mi Carrera)
+            'estrategia': 1,  // Se mueve al 1
+            'malla': 2,       // Se mueve al 2
+            'progreso': 3,    // ... y así sucesivamente
             'analitica': 4,
             'calculadora': 5,
             'skills': 6,
             'simulador': 7,
-            'kanban': 8,
-            'recursos': 9
+            'kanban': 8,      // El botón de Chamba (Página 8)
+            'recursos': 9     // Recursos queda al final
         };
 
-        const btns = document.querySelectorAll('.nav-menu .nav-btn');
-        if(map[id] !== undefined && btns[map[id]]) btns[map[id]].classList.add('active');
+        if(map[id] !== undefined) {
+            // Usamos .nav-menu .nav-btn para ser más específicos
+            const buttons = document.querySelectorAll('.nav-menu .nav-btn');
+            if(buttons[map[id]]) {
+                buttons[map[id]].classList.add('active');
+            }
+        }
 
+        // 4. Lógica específica de cada página
+        if(id === 'simulador') updateScheduleDropdowns();
         if(id === 'progreso') renderDashboard();
         if(id === 'analitica') renderAnalytics();
-        if(id === 'simulador') updateScheduleDropdowns();
-    };
+        // Si entramos a estrategia, aseguramos que el grid se vea bien
+        if(id === 'estrategia') renderHellGrid(); 
+    }
 
-    window.toggleTheme = function() {
+    function toggleTheme() {
         document.body.classList.toggle('dark-mode');
         localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
-    };
+    }
 
-    // --- MALLA ---
-    window.renderMalla = function() {
+    // ================= MALLA & PPS =================
+    function renderMalla() {
         const grid = document.getElementById('malla-grid');
-        if(!grid) return;
         grid.innerHTML = '';
-        const maxCiclo = courses.length ? Math.max(...courses.map(c => c.c)) : 10;
-
-        for(let i=1; i<=maxCiclo; i++) {
+        for(let i=1; i<=10; i++) {
             const col = document.createElement('div');
             col.className = 'cycle-col';
             col.innerHTML = `<div class="cycle-title">Ciclo ${i}</div>`;
             courses.filter(c => c.c === i).forEach(c => {
                 const card = document.createElement('div');
                 card.className = `course-card type-${c.t}`;
-                if(approved.has(c.id)) card.classList.add('completed');
-                else if(c.req && !c.req.every(r => approved.has(r))) card.classList.add('locked');
+                card.id = c.id;
                 
-                let grade = approved.has(c.id) && approvedGrades[c.id] ? `<div class="grade-badge">${approvedGrades[c.id]}</div>` : '';
-                
+                const passed = approved.has(c.id);
+                const reqMet = c.req.every(r => approved.has(r));
+
+                if(passed) card.classList.add('completed');
+                else if(!reqMet) { card.classList.add('locked'); card.title = "Falta requisito: " + c.req.join(', '); }
+
+                let gradeHtml = '';
+                if(passed && approvedGrades[c.id]) {
+                    gradeHtml = `<div class="grade-badge">${approvedGrades[c.id]}</div>`;
+                }
+
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#666">
                         <strong>${c.id}</strong> <span>${c.cr} Cr.</span>
                     </div>
                     <b>${c.name}</b>
-                    <div style="font-size:0.75rem; color:#999; margin-top:5px; text-align:right">${c.t==='O'?'Oblig.':'Elect.'}</div>
-                    ${grade}
+                    <div style="font-size:0.75rem; color:#999; margin-top:5px; text-align:right">${c.t==='O'?'Obligatorio':'Electivo'}</div>
+                    ${gradeHtml}
                 `;
-                card.onclick = () => window.toggleCourse(c);
+                card.onclick = () => toggleCourse(c, reqMet);
                 col.appendChild(card);
             });
             grid.appendChild(col);
         }
-    };
+    }
 
-    window.toggleCourse = function(c) {
+    function toggleCourse(c, reqMet) {
         if(approved.has(c.id)) {
-            const dep = courses.find(x => x.req && x.req.includes(c.id) && approved.has(x.id));
-            if(dep) return alert(`No puedes desmarcar ${c.name}, es requisito de ${dep.name}`);
+            const dep = courses.find(x => x.req.includes(c.id) && approved.has(x.id));
+            if(dep) return alert(`No puedes desmarcar ${c.name}, bloquea a ${dep.name}`);
             approved.delete(c.id);
             delete approvedGrades[c.id];
         } else {
-            if(c.req && !c.req.every(r => approved.has(r))) return;
-            let g = prompt("Nota final (Opcional):", "14");
-            if(g !== null) {
+            if(!reqMet) return;
+            // Ask for grade
+            let grade = prompt(`Ingrese nota final para ${c.name} (Opcional, Enter para omitir):`, "14");
+            if(grade !== null) {
                 approved.add(c.id);
-                if(g.trim() && !isNaN(g)) approvedGrades[c.id] = parseInt(g);
-            } else return;
+                if(grade.trim() !== "" && !isNaN(grade)) {
+                    approvedGrades[c.id] = parseInt(grade);
+                }
+            } else {
+                return; // Cancelled
+            }
         }
-        updateStats(); renderMalla(); renderSkills(); saveCloudData();
-    };
+        localStorage.setItem('unmsm_adm_v11_c', JSON.stringify([...approved]));
+        localStorage.setItem('unmsm_adm_v11_g', JSON.stringify(approvedGrades));
+        renderMalla();
+        updateStats();
+    }
 
-    window.updateStats = function() {
-        let cr=0, sum=0, count=0;
-        courses.forEach(c => {
+    function updateStats() {
+        let cr = 0;
+        let weightedSum = 0;
+        let creditsWithGrade = 0;
+
+        courses.forEach(c => { 
             if(approved.has(c.id)) {
                 cr += c.cr;
-                if(approvedGrades[c.id]) { sum += approvedGrades[c.id]*c.cr; count += c.cr; }
+                if(approvedGrades[c.id]) {
+                    weightedSum += approvedGrades[c.id] * c.cr;
+                    creditsWithGrade += c.cr;
+                }
+            } 
+        });
+        
+        const pps = creditsWithGrade > 0 ? (weightedSum / creditsWithGrade).toFixed(2) : "0.00";
+        document.getElementById('credits-display').innerText = cr;
+        document.getElementById('pps-display').innerText = pps;
+        document.getElementById('pps-dashboard').innerText = pps;
+    }
+
+    function resetMalla() {
+        if(confirm("¿Borrar todo el progreso?")) {
+            localStorage.clear(); location.reload();
+        }
+    }
+
+    // ================= DASHBOARD & PDF =================
+    function renderDashboard() {
+        const TOTAL_REQUIRED = 220; 
+        let appCr = 0;
+        courses.forEach(c => {
+            if(approved.has(c.id)) {
+                appCr += c.cr;
             }
         });
-        const pps = count ? (sum/count).toFixed(2) : "0.00";
-        if(document.getElementById('credits-display')) {
-            document.getElementById('credits-display').innerText = cr;
-            document.getElementById('pps-display').innerText = pps;
-            document.getElementById('pps-dashboard').innerText = pps;
-        }
-    };
 
-    window.resetMalla = function() {
-        if(confirm("¿Borrar todo el progreso?")) {
-            approved = new Set(); approvedGrades = {};
-            saveCloudData(); location.reload();
-        }
-    };
+        let percentage = Math.round((appCr / TOTAL_REQUIRED) * 100);
+        let visualPercentage = Math.min(100, percentage);
 
-    // --- DASHBOARD & ANALYTICS ---
-    window.renderDashboard = function() {
-        // Necesitamos el total de créditos de la malla actual
-        const TOTAL = courses.reduce((a,b) => a + b.cr, 0); 
-        let appCr = 0;
-        courses.forEach(c => { if(approved.has(c.id)) appCr += c.cr; });
+        document.getElementById('stat-total').innerText = `${appCr} / ${TOTAL_REQUIRED}`;
+        document.getElementById('bar-total').style.width = `${visualPercentage}%`;
         
-        let pct = Math.round((appCr / TOTAL) * 100);
-        document.getElementById('stat-total').innerText = `${appCr} / ${TOTAL}`;
-        document.getElementById('bar-total').style.width = `${Math.min(100, pct)}%`;
-        document.getElementById('chart-text').innerText = `${pct}% Completado`;
+        document.getElementById('chart-text').innerText = appCr >= TOTAL_REQUIRED ? `¡Meta Cumplida!` : `${percentage}% Completado`;
         
-        // Grafico
-        const ctx = document.getElementById('progressChart');
-        if(ctx) {
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Aprobado', 'Pendiente'],
-                    datasets: [{ data: [appCr, TOTAL-appCr], backgroundColor: ['#27ae60','#eee'] }]
+        const remaining = Math.max(0, TOTAL_REQUIRED - appCr);
+        const cyclesLeft = Math.ceil(remaining / 21);
+        document.getElementById('grad-projection').innerHTML = appCr >= TOTAL_REQUIRED ? 
+            "<b style='color:green'>¡FELICIDADES! Tienes créditos para egresar.</b>" : 
+            `Faltan aprox. <b>${cyclesLeft} ciclos</b> académicos.`;
+
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Aprobados', 'Pendientes'],
+                datasets: [{
+                    data: [Math.min(appCr, TOTAL_REQUIRED), remaining],
+                    backgroundColor: [appCr >= TOTAL_REQUIRED ? '#27ae60' : '#8a0303', '#eee'],
+                    borderWidth: 0
+                }]
+            },
+            options: { cutout: '70%', plugins: { legend: { display: true, position: 'bottom' } } }
+        });
+    }
+
+    function exportPDF() {
+        const el = document.getElementById('export-content');
+        const opt = { margin: 10, filename: 'reporte-academico-unmsm.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        html2pdf().from(el).set(opt).save();
+    }
+
+    // ================= ANALÍTICA MODIFICADO =================
+    function renderAnalytics() {
+        // 1. PPS POR CICLO
+        const cycleLabels = [];
+        const cycleData = [];
+        
+        for(let i=1; i<=10; i++) {
+            let sum = 0;
+            let count = 0;
+            courses.filter(c => c.c === i && approved.has(c.id)).forEach(c => {
+                if(approvedGrades[c.id]) {
+                    sum += approvedGrades[c.id] * c.cr;
+                    count += c.cr;
                 }
             });
-        }
-    };
-
-    window.renderAnalytics = function() {
-        // Historial PPS
-        const cycles = [], data = [];
-        const maxC = Math.max(...courses.map(c=>c.c));
-        for(let i=1; i<=maxC; i++) {
-            let s=0, n=0;
-            courses.filter(c=>c.c===i && approved.has(c.id)).forEach(c=>{
-                if(approvedGrades[c.id]) { s+=approvedGrades[c.id]*c.cr; n+=c.cr; }
-            });
-            if(n>0) { cycles.push(`C${i}`); data.push((s/n).toFixed(2)); }
+            if(count > 0) {
+                cycleLabels.push(`Ciclo ${i}`);
+                cycleData.push((sum/count).toFixed(2));
+            }
         }
         
-        const ctx1 = document.getElementById('ppsHistoryChart');
-        if(ctx1) new Chart(ctx1, {type:'line', data:{labels:cycles, datasets:[{label:'PPS', data:data, borderColor:'#8a0303'}]}});
-        
-        // Areas
-        // ... (Tu logica de skills radar) ...
-    };
+        const ctxPPS = document.getElementById('ppsHistoryChart').getContext('2d');
+        if(ppsChartInstance) ppsChartInstance.destroy();
+        ppsChartInstance = new Chart(ctxPPS, {
+            type: 'line',
+            data: {
+                labels: cycleLabels,
+                datasets: [{
+                    label: 'Promedio Ponderado por Ciclo',
+                    data: cycleData,
+                    borderColor: '#8a0303',
+                    backgroundColor: 'rgba(138, 3, 3, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: { scales: { y: { min: 10, max: 20 } }, plugins: { legend: { display: false } } }
+        });
 
-    // --- CALCULADORA ---
-    let gradeRows = 0;
+        // 2. RADAR SKILLS/BRANCHES
+        let counts = {fin:0, mkt:0, rrhh:0, op:0};
+        courses.forEach(c => {
+            if(approved.has(c.id) && c.tags) {
+                c.tags.forEach(t => { if(counts[t]!==undefined) counts[t]++; });
+            }
+        });
+        
+        const ctxRadar = document.getElementById('skillsRadarChart').getContext('2d');
+        if(skillsRadarInstance) skillsRadarInstance.destroy();
+        skillsRadarInstance = new Chart(ctxRadar, {
+            type: 'polarArea',
+            data: {
+                labels: ['Finanzas', 'Marketing', 'RRHH', 'Gestión/Ops'],
+                datasets: [{
+                    data: [counts.fin, counts.mkt, counts.rrhh, counts.op],
+                    backgroundColor: ['rgba(39, 174, 96, 0.6)', 'rgba(230, 126, 34, 0.6)', 'rgba(142, 68, 173, 0.6)', 'rgba(41, 128, 185, 0.6)']
+                }]
+            }
+        });
+
+        // 3. NUEVO: Comparativa Créditos por Área (Aprobados vs Total)
+        // Calculamos totales disponibles
+        let totalTags = {fin:0, mkt:0, rrhh:0, op:0};
+        courses.forEach(c => {
+            if(c.tags) c.tags.forEach(t => { if(totalTags[t]!==undefined) totalTags[t]++; });
+        });
+
+        const ctxArea = document.getElementById('areaProgressChart').getContext('2d');
+        if(areaProgressInstance) areaProgressInstance.destroy();
+        areaProgressInstance = new Chart(ctxArea, {
+            type: 'bar',
+            data: {
+                labels: ['Finanzas', 'Marketing', 'RRHH', 'Gestión/Ops'],
+                datasets: [
+                    {
+                        label: 'Cursos Aprobados',
+                        data: [counts.fin, counts.mkt, counts.rrhh, counts.op],
+                        backgroundColor: '#8a0303'
+                    },
+                    {
+                        label: 'Total Disponibles',
+                        data: [totalTags.fin, totalTags.mkt, totalTags.rrhh, totalTags.op],
+                        backgroundColor: '#e0e0e0'
+                    }
+                ]
+            },
+            options: {
+                scales: { x: { stacked: true }, y: { stacked: true } }
+            }
+        });
+
+        // 4. NUEVO: Distribución de Notas
+        let gradesDist = { excelente:0, bueno:0, regular:0, bajo:0 }; // Ex: 17-20, Bue: 14-16, Reg: 11-13, Bajo: <11
+        Object.values(approvedGrades).forEach(g => {
+            if(g >= 17) gradesDist.excelente++;
+            else if(g >= 14) gradesDist.bueno++;
+            else if(g >= 11) gradesDist.regular++;
+            else gradesDist.bajo++;
+        });
+
+        const ctxGrades = document.getElementById('gradesDistChart').getContext('2d');
+        if(gradesDistInstance) gradesDistInstance.destroy();
+        gradesDistInstance = new Chart(ctxGrades, {
+            type: 'pie',
+            data: {
+                labels: ['Excelente (17-20)', 'Bueno (14-16)', 'Regular (11-13)', 'Bajo (<11)'],
+                datasets: [{
+                    data: [gradesDist.excelente, gradesDist.bueno, gradesDist.regular, gradesDist.bajo],
+                    backgroundColor: ['#27ae60', '#f1c40f', '#e67e22', '#c0392b']
+                }]
+            }
+        });
+    }
+
+    // ================= CALCULADORA =================
+    let gradeRowCount = 0;
     function initCalculator() {
-        const c = document.getElementById('grades-container');
-        if(c && c.children.length === 0) { window.addGradeRow(); window.addGradeRow(); }
+        const container = document.getElementById('grades-container');
+        if(container.children.length === 0) { addGradeRow(25); addGradeRow(25); addGradeRow(20); }
     }
-    window.addGradeRow = function() {
-        gradeRows++;
-        const c = document.getElementById('grades-container');
-        if(!c) return;
-        const d = document.createElement('div');
-        d.className = 'grade-row';
-        d.innerHTML = `<span style="width:30px">N${gradeRows}</span><input type="number" class="grade-input" placeholder="0-20"><input type="number" class="weight-input" placeholder="%"><button class="btn-del-row" onclick="this.parentElement.remove()">×</button>`;
-        c.appendChild(d);
-    };
-    window.calculateGrades = function() {
-        let s=0, w=0;
-        document.querySelectorAll('.grade-row').forEach(r => {
-            const g = parseFloat(r.querySelector('.grade-input').value);
-            const p = parseFloat(r.querySelector('.weight-input').value);
-            if(!isNaN(g) && !isNaN(p)) { s += g*(p/100); w += p; }
+    function addGradeRow(defWeight = '') {
+        gradeRowCount++;
+        const container = document.getElementById('grades-container');
+        const row = document.createElement('div'); row.className = 'grade-row';
+        row.innerHTML = `<span style="font-weight:bold;width:50px;">N${gradeRowCount}</span><input type="number" class="grade-input" placeholder="0-20"><input type="number" class="weight-input" placeholder="%" value="${defWeight}"><span>%</span><button class="btn-del-row" onclick="this.parentElement.remove()">×</button>`;
+        container.appendChild(row);
+    }
+    function calculateGrades() {
+        const rows = document.querySelectorAll('.grade-row');
+        let totalWeighted = 0; let totalWeight = 0;
+        rows.forEach(row => {
+            const g = parseFloat(row.querySelector('.grade-input').value);
+            const w = parseFloat(row.querySelector('.weight-input').value);
+            if(!isNaN(g) && !isNaN(w)) { totalWeighted += g*(w/100); totalWeight += w; }
         });
-        document.getElementById('res-current-avg').innerText = s.toFixed(2);
-        const rest = 100 - w;
-        document.getElementById('res-analysis').innerHTML = rest > 0 ? `Falta ${rest}%` : (s>=11 ? "Aprobado" : "Reprobado");
-    };
-    window.resetCalculator = function() {
-        document.getElementById('grades-container').innerHTML = '';
-        gradeRows=0; window.addGradeRow(); window.addGradeRow();
-        document.getElementById('res-current-avg').innerText = '0.00';
-    };
-
-    // --- SIMULADOR & ICS ---
-    function initSchedule() {
-        const s = document.getElementById('sched-start');
-        const e = document.getElementById('sched-end');
-        if(!s || !e) return;
-        s.innerHTML = ''; e.innerHTML = '';
-        for(let i=7; i<=22; i++) {
-            let t = (i<10?'0':'')+i+':00';
-            s.innerHTML+=`<option value="${i}">${t}</option>`;
-            if(i>7) e.innerHTML+=`<option value="${i}">${t}</option>`;
+        document.getElementById('res-current-avg').innerText = totalWeighted.toFixed(2);
+        const box = document.getElementById('res-analysis');
+        const minPass = parseFloat(document.getElementById('calc-min-pass').value) || 11;
+        const missing = 100 - totalWeight;
+        if(totalWeight > 100) box.innerHTML = "<b style='color:red'>Error: >100%</b>";
+        else if(totalWeight === 100) box.innerHTML = totalWeighted >= minPass ? "<b>¡Aprobado!</b>" : "<b>Desaprobado</b>";
+        else {
+            const needed = (minPass - totalWeighted) / (missing/100);
+            box.innerHTML = needed <= 0 ? "¡Ya aprobaste!" : needed > 20 ? `Imposible aprobar (Necesitas ${needed.toFixed(1)})` : `Necesitas <b>${needed.toFixed(2)}</b> en el ${missing}% restante.`;
         }
-        e.value=10; renderScheduleItems();
     }
-    window.updateScheduleDropdowns = function() {
-        const sel = document.getElementById('sched-course');
-        if(!sel) return;
-        sel.innerHTML = '';
-        const avail = courses.filter(c => !approved.has(c.id) && (!c.req || c.req.every(r=>approved.has(r))));
-        avail.forEach(c => {
-            sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    function resetCalculator() {
+        document.getElementById('grades-container').innerHTML = ''; gradeRowCount = 0; initCalculator();
+        document.getElementById('res-current-avg').innerText = '0.00'; document.getElementById('res-analysis').innerText = '...';
+    }
+
+    // ================= SKILLS =================
+    function renderSkills() {
+        const grid = document.getElementById('tools-grid'); grid.innerHTML = '';
+        skillsDB.sort((a,b) => a.name.localeCompare(b.name));
+        skillsDB.forEach(skill => {
+            const isChecked = acquiredSkills.has(skill.id);
+            const chip = document.createElement('div'); chip.className = `tool-chip ${isChecked ? 'active' : ''}`;
+            chip.onclick = () => {
+                if(acquiredSkills.has(skill.id)) acquiredSkills.delete(skill.id); else acquiredSkills.add(skill.id);
+                localStorage.setItem('unmsm_adm_v11_s', JSON.stringify([...acquiredSkills])); renderSkills();
+            };
+            chip.innerHTML = `<div class="tool-check">${isChecked ? '✓' : ''}</div><span>${skill.name}</span>`;
+            grid.appendChild(chip);
         });
-    };
-    window.addToSchedule = function() {
+        calculateProfiles();
+    }
+    function calculateProfiles() {
+        const sc = {fin:0,mkt:0,rrhh:0,op:0}; const mx = {fin:0,mkt:0,rrhh:0,op:0};
+        skillsDB.forEach(s => {
+            ['fin','mkt','rrhh','op'].forEach(k => { if(s.weights[k]) { mx[k]+=s.weights[k]; if(acquiredSkills.has(s.id)) sc[k]+=s.weights[k]; }});
+        });
+        ['fin','mkt','rrhh','op'].forEach(k => {
+            const p = mx[k]===0?0:Math.round((sc[k]/mx[k])*100);
+            document.getElementById(`pct-${k}`).innerText = `${p}%`; document.getElementById(`bar-${k}`).style.width = `${p}%`;
+        });
+    }
+
+    // ================= SIMULADOR & EXPORTAR ICS =================
+    function initSchedule() {
+        const s = document.getElementById('sched-start'); const e = document.getElementById('sched-end');
+        s.innerHTML = ''; e.innerHTML = '';
+        for(let i=7; i<=22; i++) { let t = (i<10?'0':'')+i+':00'; s.innerHTML+=`<option value="${i}">${t}</option>`; if(i>7) e.innerHTML+=`<option value="${i}">${t}</option>`; }
+        e.value = 10; renderScheduleGrid(); renderScheduleItems();
+    }
+    function updateScheduleDropdowns() {
+        const sel = document.getElementById('sched-course'); sel.innerHTML = '';
+        const avail = courses.filter(c => !approved.has(c.id) && c.req.every(r => approved.has(r)));
+        if(avail.length===0) sel.innerHTML='<option disabled>No hay cursos disponibles</option>';
+        else avail.forEach(c => {
+            const added = mySchedule.some(s=>s.courseId===c.id);
+            sel.innerHTML += `<option value="${c.id}">${added?'✅ ':''}${c.name} (${c.cr} Cr.)</option>`;
+        });
+    }
+    function renderScheduleGrid() {
+        const grid = document.getElementById('schedule-grid');
+        while(grid.children.length > 7) grid.removeChild(grid.lastChild);
+        for(let h=7; h<=22; h++) {
+            const t = document.createElement('div'); t.className='grid-time-cell'; t.innerText=`${h}:00`; grid.appendChild(t);
+            for(let d=1; d<=6; d++) { const c = document.createElement('div'); c.className='grid-cell'; c.dataset.day=d; c.dataset.hour=h; grid.appendChild(c); }
+        }
+    }
+    function renderScheduleItems() {
+        document.querySelectorAll('.course-block').forEach(b => b.remove());
+        let total = 0; let unique = new Set();
+        mySchedule.forEach(i => unique.add(i.courseId));
+        unique.forEach(id => { const c = courses.find(x => x.id===id); if(c) total+=c.cr; });
+        document.getElementById('sim-credits').innerText = total;
+
+        mySchedule.forEach((item, idx) => {
+            const c = courses.find(x => x.id === item.courseId);
+            const cell = document.querySelector(`.grid-cell[data-day="${item.day}"][data-hour="${item.start}"]`);
+            if(cell) {
+                const b = document.createElement('div'); b.className = 'course-block';
+                b.style.height = `${(item.end-item.start)*51 - 2}px`; b.style.background = item.color;
+                b.innerHTML = `<div class="remove-course" onclick="removeFromSchedule(${idx})">×</div><strong>${c?c.name:item.courseId}</strong><small>${item.start}:00-${item.end}:00</small>`;
+                cell.appendChild(b);
+            }
+        });
+    }
+    function addToSchedule() {
         const id = document.getElementById('sched-course').value;
         const d = parseInt(document.getElementById('sched-day').value);
         const s = parseInt(document.getElementById('sched-start').value);
         const e = parseInt(document.getElementById('sched-end').value);
         if(!id || s>=e) return alert("Datos inválidos");
-        
-        mySchedule.push({courseId:id, day:d, start:s, end:e, color:'#3498db'});
-        saveCloudData(); renderScheduleItems();
-    };
-    window.clearSchedule = function() { mySchedule=[]; saveCloudData(); renderScheduleItems(); };
-    window.removeFromSchedule = function(i) { mySchedule.splice(i,1); saveCloudData(); renderScheduleItems(); };
+        if(mySchedule.some(x => x.day===d && ((s>=x.start && s<x.end) || (e>x.start && e<=x.end) || (s<=x.start && e>=x.end)))) return alert("Cruce de horarios");
+        const exist = mySchedule.find(x => x.courseId === id);
+        const color = exist ? exist.color : ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4dd0e1','#4db6ac','#81c784','#ffb74d'][Math.floor(Math.random()*10)];
+        mySchedule.push({courseId:id, day:d, start:s, end:e, color});
+        localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule));
+        renderScheduleItems(); updateScheduleDropdowns();
+    }
+    function removeFromSchedule(i) { mySchedule.splice(i,1); localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule)); renderScheduleItems(); updateScheduleDropdowns(); }
+    function clearSchedule() { if(confirm("¿Borrar?")) { mySchedule=[]; localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule)); renderScheduleItems(); updateScheduleDropdowns(); } }
     
-    function renderScheduleItems() {
-        document.querySelectorAll('.course-block').forEach(b => b.remove());
-        let t = 0;
-        mySchedule.forEach((item, idx) => {
-            const c = courses.find(x => x.id === item.courseId);
-            if(c) t+=c.cr;
-            const cell = document.querySelector(`.grid-cell[data-day="${item.day}"][data-hour="${item.start}"]`);
-            if(cell) {
-                const b = document.createElement('div');
-                b.className = 'course-block';
-                b.style.height = `${(item.end-item.start)*51 - 2}px`;
-                b.style.background = item.color;
-                b.innerHTML = `<div class="remove-course" onclick="removeFromSchedule(${idx})">×</div><strong>${c?c.name:item.courseId}</strong>`;
-                cell.appendChild(b);
-            }
-        });
-        if(document.getElementById('sim-credits')) document.getElementById('sim-credits').innerText = t;
+    function exportSchedulePDF() {
+        const el = document.getElementById('schedule-export-area');
+        const opt = { margin: 5, filename: 'horario-matricula-unmsm.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } };
+        html2pdf().from(el).set(opt).save();
     }
 
-    // --- ICS GENERATOR ---
-    window.downloadICS = function() {
-        if(!mySchedule.length) return alert("Horario vacío");
-        let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//LuminStudy//ES\n";
-        const now = new Date();
+    // --- NUEVO: FUNCIÓN PARA GENERAR ICS (GOOGLE CALENDAR) ---
+    function downloadICS() {
+        if(mySchedule.length === 0) return alert("No hay cursos en el horario para exportar.");
         
-        mySchedule.forEach(s => {
-            const c = courses.find(x => x.id === s.courseId);
-            const d = new Date();
-            d.setDate(d.getDate() + (s.day + 7 - d.getDay()) % 7);
-            d.setHours(s.start,0,0);
-            const e = new Date(d); e.setHours(s.end,0,0);
+        // Helper para formatear fecha a string ICS: YYYYMMDDTHHMMSS
+        const formatICSDate = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0];
+        };
+
+        // Helper para obtener el próximo "Lunes" (u otro día)
+        const getNextDayOfWeek = (dayIndex) => {
+            const today = new Date();
+            const resultDate = new Date(today.getTime());
+            // dayIndex: 1=Lun, 6=Sab
+            // JS getDay(): 0=Dom, 1=Lun...
+            // Ajuste para JS
+            const jsDay = dayIndex === 7 ? 0 : dayIndex; 
             
-            const fmt = (dt) => dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
-            ics += `BEGIN:VEVENT\nSUMMARY:${c?c.name:'Clase'}\nDTSTART:${fmt(d)}\nDTEND:${fmt(e)}\nRRULE:FREQ=WEEKLY;COUNT=16\nEND:VEVENT\n`;
-        });
-        ics += "END:VCALENDAR";
-        const b = new Blob([ics], {type:'text/calendar'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='horario.ics'; a.click();
-    };
-
-    // --- KANBAN ---
-    window.addJob = () => { /* ... (ya incluido en la lógica de guardado) ... */ 
-        const co = document.getElementById('job-company').value;
-        const ro = document.getElementById('job-role').value;
-        if(!co) return;
-        jobApplications.push({id:Date.now(), company:co, role:ro, status:'todo', date:new Date().toLocaleDateString()});
-        saveCloudData(); renderKanban();
-    };
-    window.moveJob = (id, st) => {
-        const j = jobApplications.find(x=>x.id===id);
-        if(j) { j.status=st; saveCloudData(); renderKanban(); }
-    };
-    window.deleteJob = (id) => {
-        jobApplications = jobApplications.filter(x=>x.id!==id);
-        saveCloudData(); renderKanban();
-    };
-    function renderKanban() {
-        ['todo','process','offer','reject'].forEach(k => {
-            const el = document.getElementById('col-'+k);
-            if(el) {
-                el.innerHTML = '';
-                jobApplications.filter(j=>j.status===k).forEach(j => {
-                    const d = document.createElement('div'); d.className='job-card';
-                    d.innerHTML = `<b>${j.company}</b><br>${j.role}<br><button onclick="deleteJob(${j.id})">x</button>
-                    <br><button onclick="moveJob(${j.id},'process')">→</button>`; // Simplificado
-                    el.appendChild(d);
-                });
+            resultDate.setDate(today.getDate() + (jsDay + 7 - today.getDay()) % 7);
+            // Si es hoy, lo movemos a hoy, si ya pasó la hora quizás convenga next week, pero dejémoslo simple: Próximo X dia
+            if(today.getDay() === jsDay && today.getHours() > 20) {
+                 resultDate.setDate(resultDate.getDate() + 7);
             }
+            return resultDate;
+        };
+
+        let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//UNMSM//Administracion//ES\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n";
+
+        mySchedule.forEach(item => {
+            const course = courses.find(c => c.id === item.courseId);
+            const title = course ? course.name : "Clase UNMSM";
+            
+            // Calcular fecha de inicio (próximo Lunes/Martes etc)
+            let startDate = getNextDayOfWeek(item.day);
+            startDate.setHours(item.start, 0, 0, 0);
+            
+            let endDate = new Date(startDate);
+            endDate.setHours(item.end, 0, 0, 0);
+
+            icsContent += "BEGIN:VEVENT\n";
+            icsContent += "SUMMARY:" + title + "\n";
+            icsContent += "DTSTART:" + formatICSDate(startDate) + "\n";
+            icsContent += "DTEND:" + formatICSDate(endDate) + "\n";
+            icsContent += "RRULE:FREQ=WEEKLY;COUNT=16\n"; // 16 Semanas de ciclo
+            icsContent += "DESCRIPTION:Curso del ciclo académico.\n";
+            icsContent += "LOCATION:UNMSM FCA\n";
+            icsContent += "STATUS:CONFIRMED\n";
+            icsContent += "END:VEVENT\n";
+        });
+
+        icsContent += "END:VCALENDAR";
+
+        // Crear archivo y descargar
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', 'mi_horario_unmsm.ics');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // ================= ESTRATEGIA & IA AVANZADA =================
+
+    let deadlineEvents = [];
+    // Estructura de evento: { week: 1-16, name: "Parcial", type: 1(Tarea)|2(Trabajo)|3(Examen) }
+
+    // Init Logic for Strategy Page
+    function initStrategy() {
+        if(localStorage.getItem('unmsm_adm_v11_evts')) {
+            deadlineEvents = JSON.parse(localStorage.getItem('unmsm_adm_v11_evts'));
+        }
+        
+        // Poner fecha de inicio por defecto (Lunes actual o 1ro de Mes)
+        const savedDate = localStorage.getItem('unmsm_adm_v11_startdate');
+        const dateInput = document.getElementById('cycle-start-date');
+        if(savedDate) {
+            dateInput.value = savedDate;
+        } else {
+            dateInput.valueAsDate = new Date();
+        }
+
+        dateInput.addEventListener('change', (e) => {
+            localStorage.setItem('unmsm_adm_v11_startdate', e.target.value);
+        });
+
+        renderHellGrid();
+    }
+
+    // --- 1. LÓGICA DEL MAPA DE CALOR (HELL WEEK) ---
+    function addHellEvent() {
+        const week = parseInt(document.getElementById('evt-week').value);
+        const name = document.getElementById('evt-name').value;
+        const type = parseInt(document.getElementById('evt-type').value);
+
+        if(!week || !name || week < 1 || week > 16) return alert("Datos inválidos. Semana debe ser 1-16.");
+
+        deadlineEvents.push({ week, name, type });
+        deadlineEvents.sort((a,b) => a.week - b.week);
+        saveEvents();
+        renderHellGrid();
+        
+        // Disparar IA si la semana se vuelve crítica
+        const weekLoad = deadlineEvents.filter(e => e.week === week).reduce((acc, e) => acc + e.type, 0);
+        if(weekLoad >= 5) {
+            addAIMessage(`⚠️ <b>¡Atención Estratégica!</b> Acabas de sobrecargar la <b>Semana ${week}</b>. <br>Recomendación: Empieza los resúmenes o avances en la Semana ${Math.max(1, week-2)}.`);
+        }
+    }
+
+    function removeHellEvent(index) {
+        deadlineEvents.splice(index, 1);
+        saveEvents();
+        renderHellGrid();
+    }
+
+    function saveEvents() {
+        localStorage.setItem('unmsm_adm_v11_evts', JSON.stringify(deadlineEvents));
+    }
+
+    function renderHellGrid() {
+        const grid = document.getElementById('hell-grid');
+        grid.innerHTML = '';
+
+        for(let w=1; w<=16; w++) {
+            const events = deadlineEvents.filter(e => e.week === w);
+            const loadScore = events.reduce((acc, e) => acc + e.type, 0);
+            
+            // Determinar nivel de infierno
+            let intensityClass = 'level-0'; 
+            if(loadScore >= 2 && loadScore < 5) intensityClass = 'level-1'; 
+            if(loadScore >= 5 && loadScore < 8) intensityClass = 'level-2'; 
+            if(loadScore >= 8) intensityClass = 'level-3'; 
+
+            let eventsHtml = '';
+            deadlineEvents.forEach((evt, idx) => {
+                if(evt.week === w) {
+                    let icon = evt.type === 3 ? '⚡' : (evt.type === 2 ? '📝' : '📌');
+                    eventsHtml += `<div class="event-item"><span>${icon} ${evt.name}</span> <span class="del-evt" onclick="removeHellEvent(${idx})">×</span></div>`;
+                }
+            });
+
+            const box = document.createElement('div');
+            box.className = `week-box ${intensityClass}`;
+            
+            // CORRECCIÓN AQUÍ: overflow-y: auto para permitir scroll si hay muchos items
+            box.innerHTML = `
+                <div class="week-header">
+                    <span>Semana ${w}</span>
+                    <span class="week-score">Carga: ${loadScore}</span>
+                </div>
+                <div style="flex:1; overflow-y:auto; padding-right:2px;">
+                    ${eventsHtml}
+                </div>
+            `;
+            grid.appendChild(box);
+        }
+    }
+
+    // --- 2. EXPORTAR CALENDARIO DE ENTREGAS (.ICS) ---
+    function downloadDeadlinesICS() {
+        if(deadlineEvents.length === 0) return alert("No hay fechas de exámenes/entregas registradas.");
+        
+        const startInput = document.getElementById('cycle-start-date').value;
+        if(!startInput) return alert("Por favor selecciona la 'Fecha Inicio Ciclo' arriba del mapa de calor.");
+        
+        const cycleStart = new Date(startInput);
+        // Ajustar a zona horaria local para evitar desfaces
+        cycleStart.setMinutes(cycleStart.getMinutes() + cycleStart.getTimezoneOffset());
+
+        let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//UNMSM//Strategy//ES\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n";
+
+        const formatICSDate = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0];
+
+        deadlineEvents.forEach(evt => {
+            // Calcular fecha real: Inicio + (Semana-1)*7 días
+            let eventDate = new Date(cycleStart);
+            eventDate.setDate(cycleStart.getDate() + (evt.week - 1) * 7);
+            
+            // Poner hora por defecto 8:00 AM para exámenes
+            eventDate.setHours(8, 0, 0, 0);
+            let endDate = new Date(eventDate);
+            endDate.setHours(10, 0, 0, 0);
+
+            icsContent += "BEGIN:VEVENT\n";
+            icsContent += `SUMMARY:[S${evt.week}] ${evt.name} (UNMSM)\n`;
+            icsContent += "DTSTART:" + formatICSDate(eventDate) + "\n";
+            icsContent += "DTEND:" + formatICSDate(endDate) + "\n";
+            icsContent += "DESCRIPTION:Recordatorio estratégico de la Semana del Infierno.\n";
+            icsContent += "STATUS:CONFIRMED\n";
+            icsContent += "BEGIN:VALARM\nTRIGGER:-PT24H\nACTION:DISPLAY\nDESCRIPTION:Estudiar Mañana\nEND:VALARM\n"; // Alarma 24h antes
+            icsContent += "END:VEVENT\n";
+        });
+
+        icsContent += "END:VCALENDAR";
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', 'mis_examenes_unmsm.ics');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- 3. INTELIGENCIA ARTIFICIAL (POLLINATIONS ) ---
+
+    // Función auxiliar para leer datos del alumno
+    function getGlobalContext() {
+        // CORRECCIÓN: Leemos el texto directo del contador de la cabecera
+        const totalCreditos = document.getElementById('credits-display').innerText; 
+
+        return {
+            promedio: document.getElementById('pps-dashboard').innerText,
+            creditos: totalCreditos, // Ahora envía "83" o "91", no "26"
+            cursosFaltantes: courses.length - approved.size,
+            
+            horario: mySchedule.map(s => {
+                let c = courses.find(x=>x.id===s.courseId); 
+                const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+                return c ? `${c.name} (${dias[s.day]} ${s.start}:00)` : ""; 
+            }).join(', '),
+            
+            examenes: deadlineEvents.map(e => `Semana ${e.week}: ${e.name} (Tipo: ${e.type===3?'Examen':'Trabajo'})`).join(', '),
+            skills: [...acquiredSkills].join(', ')
+        };
+    }
+
+    function handleChatEnter(e) {
+        if(e.key === 'Enter') sendMessage();
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('user-msg');
+        const text = input.value.trim();
+        if(!text) return;
+
+        // 1. Mostrar mensaje del usuario
+        const chat = document.getElementById('chat-history');
+        const userDiv = document.createElement('div');
+        userDiv.className = 'msg-user';
+        userDiv.innerText = text;
+        chat.appendChild(userDiv);
+        input.value = ''; 
+        chat.scrollTop = chat.scrollHeight;
+
+        // 2. Loading
+        const loader = document.getElementById('ai-loading');
+        loader.style.display = 'block';
+
+        let responseHTML = "";
+        const ctx = getGlobalContext();
+
+        // --- NUEVO: GENERAR RESUMEN DE LA MALLA PARA LA IA ---
+        // Esto crea un texto tipo: "Ciclo 1: Lenguaje, Mate I... | Ciclo 2: ..."
+        let mallaResumen = "";
+        for(let i=1; i<=10; i++) {
+            const cursosCiclo = courses.filter(c => c.c === i).map(c => c.name).join(', ');
+            mallaResumen += `[Ciclo ${i}]: ${cursosCiclo}\n`;
+        }
+        // -----------------------------------------------------
+
+        // 3. Prompt Maestro Actualizado
+        const systemPrompt = `
+            Actúa como un Asesor Académico Experto de Administración UNMSM.
+            
+            INFORMACIÓN OFICIAL DE LA MALLA CURRICULAR (Plan 2023):
+            ${mallaResumen}
+
+            DATOS DEL ALUMNO:
+            - Créditos Aprobados: ${ctx.creditos}
+            - PPS: ${ctx.promedio}
+            - Horario Actual: ${ctx.horario || "No matriculado"}
+            - Exámenes Próximos: ${ctx.examenes || "Ninguno"}
+
+            PREGUNTA: "${text}"
+
+            INSTRUCCIONES:
+            - Responde basándote EXCLUSIVAMENTE en la "Malla Curricular" provista arriba. No inventes cursos.
+            - Si preguntan qué cursos tocan en el siguiente ciclo, revisa sus créditos y dile los del ciclo correspondiente.
+            - Usa negritas <b></b> para los nombres de cursos.
+            - Sé breve y estratégico.
+        `;
+
+        try {
+            const encodedPrompt = encodeURIComponent(systemPrompt);
+            const randomSeed = Math.floor(Math.random() * 1000);
+            
+            const response = await fetch(`https://text.pollinations.ai/${encodedPrompt}?model=openai&seed=${randomSeed}`);
+            
+            if (!response.ok) throw new Error("Error IA");
+            
+            let rawText = await response.text();
+            
+            responseHTML = rawText
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') 
+                .replace(/###/g, '') 
+                .replace(/\n/g, '<br>');
+
+        } catch (error) {
+            console.error(error);
+            responseHTML = `<span style="color:#e74c3c">⚠️ La IA está pensando... intenta de nuevo.</span>`;
+        }
+
+        loader.style.display = 'none';
+        addAIMessage(responseHTML);
+    }
+
+    function addAIMessage(htmlText) {
+        const chat = document.getElementById('chat-history');
+        const aiDiv = document.createElement('div');
+        aiDiv.className = 'msg-ai';
+        aiDiv.innerHTML = htmlText;
+        chat.appendChild(aiDiv);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function askAI(type) {
+        let text = "";
+        if(type === 'finance') text = "Explícame qué es el EBITDA, para qué sirve y dame un ejemplo con una empresa peruana.";
+        if(type === 'risk') text = "Analiza mis datos (horario, exámenes, promedio) y dime si estoy en riesgo académico.";
+        if(type === 'email') text = "Redacta un correo formal a mi profesor pidiendo una revisión de examen.";
+        
+        document.getElementById('user-msg').value = text;
+        sendMessage(); 
+    }
+
+    // ================= GESTIÓN DE MALLAS =================
+
+    function restoreAdminMalla() {
+        if(confirm("¿Volver a la malla de Administración? Se borrará tu progreso actual.")) {
+            localStorage.removeItem('lumin_custom_malla'); // Borra la personalizada
+            localStorage.removeItem('unmsm_adm_v11_c'); // Borra aprobados
+            localStorage.removeItem('unmsm_adm_v11_g'); // Borra notas
+            location.reload();
+        }
+    }
+
+    function importCustomMalla() {
+        try {
+            const jsonText = document.getElementById('json-import-area').value;
+            const newCourses = JSON.parse(jsonText);
+
+            // Validación básica para que no rompan la página
+            if(!Array.isArray(newCourses) || !newCourses[0].id || !newCourses[0].name || !newCourses[0].c) {
+                return alert("Error: El código no tiene el formato de malla correcto.");
+            }
+
+            if(confirm("⚠️ Al cargar una nueva carrera, se reiniciarán tus notas y progreso. ¿Continuar?")) {
+                localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
+                // Reseteamos progreso para evitar conflictos con cursos viejos
+                localStorage.removeItem('unmsm_adm_v11_c');
+                localStorage.removeItem('unmsm_adm_v11_g');
+                location.reload();
+            }
+        } catch (e) {
+            alert("Error: El texto pegado no es un JSON válido.");
+        }
+    }
+
+    function exportCurrentMalla() {
+        const json = JSON.stringify(courses);
+        navigator.clipboard.writeText(json).then(() => {
+            alert("¡Código copiado! Envíaselo a tus amigos.");
         });
     }
 
-    // --- IA & STRATEGY ---
-    window.renderHellGrid = function() { /* ... usar lógica anterior ... */ 
-        const g = document.getElementById('hell-grid');
-        if(!g) return;
-        g.innerHTML = '';
-        for(let w=1; w<=16; w++) {
-            const evs = deadlineEvents.filter(e=>e.week===w);
-            const load = evs.reduce((a,b)=>a+b.type,0);
-            const cls = load>=5 ? 'level-2' : (load>=2 ? 'level-1' : 'level-0');
-            const d = document.createElement('div'); d.className=`week-box ${cls}`;
-            let html = `<div class="week-header">Sem ${w} <small>${load}</small></div><div style="flex:1; overflow-y:auto">`;
-            evs.forEach((e,i) => html += `<div class="event-item">${e.name} <span onclick="removeHellEvent(${deadlineEvents.indexOf(e)})">x</span></div>`);
-            html += '</div>';
-            d.innerHTML = html;
-            g.appendChild(d);
-        }
-    };
-    window.addHellEvent = function() {
-        const w = parseInt(document.getElementById('evt-week').value);
-        const n = document.getElementById('evt-name').value;
-        const t = parseInt(document.getElementById('evt-type').value);
-        if(w && n) {
-            deadlineEvents.push({week:w, name:n, type:t});
-            saveCloudData(); renderHellGrid();
-        }
-    };
-    window.removeHellEvent = function(i) { deadlineEvents.splice(i,1); saveCloudData(); renderHellGrid(); };
-    window.downloadDeadlinesICS = function() { /* logica similar a downloadICS */ };
+    
+    // ==========================================
+    // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
+    // ==========================================
+    window.showPage = showPage;
+    window.toggleTheme = toggleTheme;
+    window.resetMalla = resetMalla;
+    window.exportPDF = exportPDF;
+    window.addGradeRow = addGradeRow;
+    window.calculateGrades = calculateGrades;
+    window.resetCalculator = resetCalculator;
+    window.addToSchedule = addToSchedule;
+    window.clearSchedule = clearSchedule;
+    window.removeFromSchedule = removeFromSchedule;
+    window.downloadICS = downloadICS;
+    window.exportSchedulePDF = exportSchedulePDF;
+    window.downloadDeadlinesICS = downloadDeadlinesICS;
+    window.addHellEvent = addHellEvent;
+    window.removeHellEvent = removeHellEvent;
+    window.sendMessage = sendMessage;
+    window.handleChatEnter = handleChatEnter;
+    window.askAI = askAI;
+    window.restoreAdminMalla = restoreAdminMalla;
+    window.importCustomMalla = importCustomMalla;
+    window.exportCurrentMalla = exportCurrentMalla;
+    // --- ESTAS SON LAS NUEVAS QUE DEBES AGREGAR: ---
+    window.restoreAdminMalla = restoreAdminMalla;
+    window.importCustomMalla = importCustomMalla;
+    window.exportCurrentMalla = exportCurrentMalla;
+    // -----------------------------------------------
 
-    // --- MENSAJERIA IA ---
-    window.handleChatEnter = (e) => { if(e.key==='Enter') window.sendMessage(); };
-    window.sendMessage = async function() {
-        const inp = document.getElementById('user-msg');
-        const txt = inp.value; if(!txt) return;
-        addAIMessage(txt, 'user'); inp.value='';
-        
-        // Prompt simplificado
-        const prompt = `Actúa como asesor académico. Malla actual tiene ${courses.length} cursos. Alumno tiene ${approved.size} cursos aprobados. Pregunta: ${txt}`;
-        try {
-            const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`);
-            const ans = await res.text();
-            addAIMessage(ans, 'ai');
-        } catch(e) { addAIMessage("Error IA", 'ai'); }
-    };
-    function addAIMessage(t, type) {
-        const c = document.getElementById('chat-history');
-        c.innerHTML += `<div class="${type==='user'?'msg-user':'msg-ai'}">${t}</div>`;
-        c.scrollTop = c.scrollHeight;
-    }
-    window.askAI = function(t) { document.getElementById('user-msg').value=t; window.sendMessage(); };
-
-    // --- CONFIG & IMPORT ---
-    window.exportMallaJSON = () => { navigator.clipboard.writeText(JSON.stringify(courses)); alert("Copiado!"); };
-    window.importMallaJSON = () => {
-        try {
-            const j = JSON.parse(document.getElementById('json-malla-area').value);
-            if(Array.isArray(j)) { courses=j; approved=new Set(); saveCloudData(); location.reload(); }
-        } catch(e) { alert("Error JSON"); }
-    };
-    window.loadPresetMalla = () => {
-        if(confirm("¿Resetear?")) { courses=JSON.parse(JSON.stringify(DEFAULT_ADMIN_COURSES)); approved=new Set(); saveCloudData(); location.reload(); }
-    };
-
-    // --- PDF ---
-    window.exportPDF = function() {
-        const el = document.getElementById('export-content');
-        if(el) html2pdf().from(el).save();
-    };
-
+    // Iniciar la app
+    init();
 </script>
-
 </body>
 </html>
