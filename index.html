@@ -922,7 +922,7 @@
     }
 
     // =========================================================
-    //  ⬇️ LOGICA DE ÁREAS Y ESPECIALIDADES ⬇️
+    //  ⬇️ LOGICA DE ÁREAS Y ESPECIALIDADES (CORREGIDO) ⬇️
     // =========================================================
 
     // Variable global para las áreas
@@ -945,12 +945,12 @@
         renderCustomAreas();
     }
     
-    // 2. Renderizar los "chips" de colores
+    // 2. Renderizar los "chips" de colores (Visualización)
     function renderCustomAreas() {
-        const div = document.getElementById('areas-list'); // Ojo: en tu HTML pusiste id="areas-list" en la config
-        const div2 = document.getElementById('custom-areas-list'); // Y id="custom-areas-list" en el builder
+        const div = document.getElementById('areas-list'); // Panel Configuración
+        const div2 = document.getElementById('custom-areas-list'); // Panel Builder
         
-        // Función interna para dibujar en un div
+        // Función interna para dibujar
         const draw = (container) => {
             if(!container) return;
             container.innerHTML = '';
@@ -966,12 +966,28 @@
         draw(div2);
     }
 
-    // 3. Función del Botón "Crear"
+    // 3. NUEVA FUNCIÓN: Refrescar los selectores dentro de las tarjetas ya creadas
+    window.updateAllBuilderAreaDropdowns = function() {
+        // Generar el HTML de las opciones actualizado
+        let areaOptions = '<option value="">-- Sin Área --</option>';
+        customAreas.forEach(a => {
+            areaOptions += `<option value="${a.id}" style="color:${a.color}">★ ${a.name}</option>`;
+        });
+
+        // Buscar todos los selectores de área y actualizarlos manteniendo la selección
+        document.querySelectorAll('.b-area').forEach(select => {
+            const currentVal = select.value; 
+            select.innerHTML = areaOptions;  
+            select.value = currentVal;       
+        });
+    };
+
+    // 4. Función del Botón "Crear"
     window.addNewArea = function() {
         const nameInput = document.getElementById('new-area-name');
         const colorInput = document.getElementById('new-area-color');
         
-        if(!nameInput) return; // Seguridad
+        if(!nameInput) return;
         
         const name = nameInput.value.trim();
         const color = colorInput.value;
@@ -985,13 +1001,16 @@
         localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
         
         nameInput.value = ''; // Limpiar input
-        renderCustomAreas();  // Actualizar visualmente
+        renderCustomAreas();  // Actualizar chips visuales
         
-        // Actualizar los desplegables del constructor si existen
+        // ACTUALIZACIÓN EN TIEMPO REAL DE LAS TARJETAS
+        updateAllBuilderAreaDropdowns();
+        
+        // También actualizamos los requisitos por si acaso
         if(typeof updateAllBuilderDropdowns === 'function') updateAllBuilderDropdowns();
     };
 
-    // 4. Función del Botón "Restaurar Default"
+    // 5. Función del Botón "Restaurar Default"
     window.resetAreas = function() {
         if(confirm("¿Restaurar las áreas por defecto de Administración?")) {
             localStorage.removeItem('lumin_custom_areas');
@@ -1000,12 +1019,15 @@
         }
     };
 
-    // 5. Función para eliminar un área (la X del chip)
+    // 6. Función para eliminar un área
     window.removeCustomArea = function(idx) {
         if(confirm("¿Eliminar esta área?")) {
             customAreas.splice(idx, 1);
             localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
             renderCustomAreas();
+            
+            // ACTUALIZACIÓN EN TIEMPO REAL DE LAS TARJETAS
+            updateAllBuilderAreaDropdowns();
         }
     };
 
@@ -1604,38 +1626,33 @@
         const sel = document.getElementById('sched-course');
         const cycleFilter = document.getElementById('sched-cycle-filter').value;
         
-        // 1. Limpiar completamente el selector visualmente
         sel.innerHTML = '';
-        
-        // 2. Crear opción por defecto temporal
         const loadingOpt = document.createElement('option');
-        loadingOpt.text = "Cargando...";
+        loadingOpt.text = "Actualizando...";
         sel.add(loadingOpt);
 
-        // 3. Filtrar la lista de cursos
-        // Mostramos cursos NO aprobados.
-        // Opcional: Si quieres que SOLO muestre los que cumplen requisitos, descomenta la parte de &&
+        // 1. FILTRO ESTRICTO: 
+        // - El curso NO debe estar aprobado.
+        // - Y ADEMÁS (&&) todos sus requisitos deben estar aprobados (o no tener requisitos).
         let avail = courses.filter(c => 
-            !approved.has(c.id) 
-            // && (c.req.length === 0 || c.req.every(r => approved.has(r))) 
+            !approved.has(c.id) && 
+            (c.req.length === 0 || c.req.every(r => approved.has(r)))
         );
 
-        // 4. Aplicar el filtro de ciclo
+        // 2. Aplicar el filtro de ciclo
         if(cycleFilter !== 'all') {
             avail = avail.filter(c => c.c == cycleFilter);
         }
 
-        // 5. Limpiar y llenar con datos reales
-        sel.innerHTML = ''; // Borramos el "Cargando..."
+        sel.innerHTML = ''; // Limpiar
         
         if(avail.length === 0) {
             const opt = document.createElement('option');
-            opt.text = "No hay cursos en este filtro";
+            opt.text = "No hay cursos disponibles (Requisitos pendientes)";
             opt.disabled = true;
             opt.selected = true;
             sel.add(opt);
         } else {
-            // Ordenar alfabéticamente
             avail.sort((a, b) => a.name.localeCompare(b.name));
             
             avail.forEach(c => {
@@ -1675,7 +1692,8 @@
             }
         });
     }
-    // Función para agregar al horario (Permite cruces con advertencia)
+    
+    // Función ESTRICTA para agregar al horario
     window.addToSchedule = function() {
         const id = document.getElementById('sched-course').value;
         const d = parseInt(document.getElementById('sched-day').value);
@@ -1685,30 +1703,26 @@
         if(!id) return alert("Selecciona un curso primero.");
         if(s >= e) return alert("La hora de inicio debe ser menor a la de fin.");
         
-        // 1. Verificamos si hay cruce, pero NO bloqueamos, solo avisamos.
+        // 1. Verificamos cruce de horarios
         const conflict = mySchedule.some(x => x.day === d && (
             (s >= x.start && s < x.end) || 
             (e > x.start && e <= x.end) || 
             (s <= x.start && e >= x.end)
         ));
 
+        // BLOQUEO TOTAL
         if(conflict) {
-            // Si el usuario dice "Cancelar" en la alerta, entonces no agregamos.
-            if(!confirm("⚠️ ¡Atención! Este horario se cruza con otro curso. ¿Deseas agregarlo de todas formas?")) {
-                return; 
-            }
+            return alert("⛔ CRUCE DETECTADO: Ya tienes un curso en ese horario. No se puede agregar.");
         }
         
         // 2. Buscamos si el curso ya existe para usar el mismo color
         const exist = mySchedule.find(x => x.courseId === id);
-        // Si existe usamos su color, si no, uno aleatorio
         const color = exist ? exist.color : ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4dd0e1','#4db6ac','#81c784','#ffb74d'][Math.floor(Math.random()*10)];
         
         // 3. Guardamos
         mySchedule.push({courseId: id, day: d, start: s, end: e, color: color});
         localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule));
         
-        // 4. Actualizamos la vista
         renderScheduleItems(); 
         updateScheduleDropdowns();
     };
