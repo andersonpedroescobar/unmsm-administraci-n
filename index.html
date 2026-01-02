@@ -425,38 +425,68 @@
         </div>
     </div>
 
-    <!-- PÁGINA: MI CARRERA (CONFIGURACIÓN) -->
+    <!-- PÁGINA 9: CONFIGURACIÓN (CONSTRUCTOR VISUAL) -->
     <div id="page-config" class="page-section">
-        <div style="max-width:800px; margin:0 auto;">
-            <h2 style="text-align:center;">Configuración de Carrera</h2>
-            <p style="text-align:center; color:#666;">Por defecto estás en <b>Administración</b>. Aquí puedes cambiar a otra carrera importando su código.</p>
+        <div style="max-width:1000px; margin:0 auto;">
+            <h2 style="text-align:center;">Gestión de Carrera & Malla</h2>
+            <p style="text-align:center; color:#666;">Diseña tu propia carrera o carga una existente.</p>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:30px;">
+            <!-- 1. CONSTRUCTOR VISUAL (NUEVO) -->
+            <div class="builder-container">
+                <div class="builder-header">
+                    <h3>🛠️ Constructor de Malla Interactivo</h3>
+                    <p>Agrega los cursos ciclo por ciclo. El sistema calculará los requisitos automáticamente.</p>
+                </div>
                 
-                <!-- REINICIAR A ADMINISTRACIÓN -->
-                <div class="stats-card">
-                    <h3>🔄 Restaurar Administración</h3>
-                    <p style="font-size:0.9rem;">Si cambiaste de carrera y quieres volver a la original (FCA - Plan 2023).</p>
-                    <button class="btn-add" style="background:#8a0303;" onclick="restoreAdminMalla()">Volver a Administración</button>
+                <div id="builder-cycles-area">
+                    <!-- Aquí se dibujarán los ciclos con JS -->
                 </div>
 
-                <!-- IMPORTAR OTRA CARRERA -->
-                <div class="stats-card">
-                    <h3>📥 Importar Nueva Malla</h3>
-                    <p style="font-size:0.9rem;">Pega aquí el código JSON de tu carrera (Ingeniería, Contabilidad, etc).</p>
-                    <textarea id="json-import-area" style="width:100%; height:100px; border:1px solid #ccc; border-radius:6px; font-family:monospace; font-size:0.8rem; margin-bottom:10px;" placeholder='[{"id":"FIS1", "name":"Física I", "cr":4, "c":1...}]'></textarea>
-                    <button class="btn-export" style="width:100%; justify-content:center;" onclick="importCustomMalla()">Cargar Carrera</button>
+                <div class="builder-actions">
+                    <button class="btn-add" style="background:#555;" onclick="addBuilderCycle()">+ Añadir Otro Ciclo</button>
+                    <button class="btn-add" style="font-size:1.2rem; padding:15px;" onclick="saveBuilderMalla()">💾 GUARDAR Y USAR ESTA MALLA</button>
                 </div>
             </div>
 
-            <!-- EXPORTAR (COMPARTIR) -->
-            <div style="margin-top:30px; padding:20px; background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
-                <h3>📤 Compartir esta Malla</h3>
-                <p>Copia este código y pásaselo a tus compañeros para que tengan la misma carrera.</p>
-                <button class="btn-export btn-ics" onclick="exportCurrentMalla()">Copiar Código al Portapapeles</button>
+            <hr style="margin:40px 0; border:0; border-top:1px solid #ddd;">
+
+            <!-- 2. ZONA AVANZADA (JSON Y PRESETS) -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; opacity:0.8;">
+                <div class="stats-card">
+                    <h4>🔄 Opciones Rápidas</h4>
+                    <button class="btn-export" onclick="loadPresetMalla('admin')">Restaurar Administración UNMSM</button>
+                    <div style="margin-top:10px; font-size:0.8rem; color:#666;">
+                        <span id="user-email-display">Usuario</span> | <span style="cursor:pointer; color:blue;" onclick="exportMallaJSON()">Copiar JSON</span>
+                    </div>
+                </div>
+                <div class="stats-card">
+                    <h4>📥 Importar Código (JSON)</h4>
+                    <textarea id="json-malla-area" style="width:100%; height:50px; border:1px solid #ccc; font-size:0.7rem;"></textarea>
+                    <button class="btn-export" onclick="importMallaJSON()">Cargar JSON</button>
+                </div>
             </div>
         </div>
     </div>
+
+    <style>
+        /* ESTILOS DEL CONSTRUCTOR */
+        .builder-container { background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        .builder-header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
+        .builder-cycle { background: #f8f9fa; border: 1px solid #e0e0e0; margin: 15px; border-radius: 8px; overflow: hidden; }
+        .b-cycle-title { background: #eee; padding: 10px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; color: #333; }
+        .b-courses-list { padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+        
+        .b-course-card { background: white; padding: 10px; border-radius: 6px; border-left: 4px solid var(--accent); box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 5px; position: relative; }
+        .b-course-card input, .b-course-card select { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+        .b-row { display: flex; gap: 5px; }
+        .b-del-btn { position: absolute; top: 5px; right: 5px; color: #c0392b; cursor: pointer; font-weight: bold; background: none; border: none; }
+        
+        .builder-actions { padding: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; background: #eee; }
+        
+        body.dark-mode .builder-container, body.dark-mode .b-course-card { background: #1e272e; color: #ddd; }
+        body.dark-mode .b-cycle-title, body.dark-mode .builder-actions { background: #111; color: #ddd; }
+        body.dark-mode .builder-cycle { background: #2f3640; border-color: #444; }
+    </style>
 
     <!-- PÁGINA 7: ESTRATEGIA & IA (NUEVO) -->
     <div id="page-estrategia" class="page-section">
@@ -870,13 +900,13 @@
         
         renderMalla();
         renderSkills();
+        renderHellGrid();
+        renderKanban();
         initSchedule();
         initCalculator();
         updateStats();
         
-        // --- AGREGA ESTA LÍNEA AQUÍ ---
-        initStrategy(); 
-        // ------------------------------
+        initBuilder(); 
     }
     function showPage(id) {
         // 1. Ocultar todas las secciones y desactivar botones
@@ -1668,6 +1698,147 @@
         });
     }
 
+    // ==========================================
+    // 5. CONSTRUCTOR VISUAL DE MALLAS (BUILDER)
+    // ==========================================
+    
+    let builderCycleCount = 0;
+
+    // Inicializar el constructor con 10 ciclos vacíos
+    window.initBuilder = function() {
+        const area = document.getElementById('builder-cycles-area');
+        if(!area) return;
+        area.innerHTML = '';
+        builderCycleCount = 0;
+        for(let i=0; i<10; i++) window.addBuilderCycle();
+    };
+
+    window.addBuilderCycle = function() {
+        builderCycleCount++;
+        const area = document.getElementById('builder-cycles-area');
+        const div = document.createElement('div');
+        div.className = 'builder-cycle';
+        div.id = `b-cycle-${builderCycleCount}`;
+        div.innerHTML = `
+            <div class="b-cycle-title">
+                Ciclo ${builderCycleCount}
+                <button onclick="addBuilderCourse(${builderCycleCount})" style="background:#27ae60; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">+ Agregar Curso</button>
+            </div>
+            <div class="b-courses-list" id="b-list-${builderCycleCount}"></div>
+        `;
+        area.appendChild(div);
+    };
+
+    window.addBuilderCourse = function(cycleNum) {
+        const list = document.getElementById(`b-list-${cycleNum}`);
+        const div = document.createElement('div');
+        div.className = 'b-course-card';
+        // Generar opciones de requisitos (cursos de ciclos anteriores)
+        let reqOptions = '<option value="">-- Sin Requisito --</option>';
+        const allPrevCourses = getCoursesFromBuilder(cycleNum - 1); // Obtener cursos hasta el ciclo anterior
+        allPrevCourses.forEach(c => {
+            reqOptions += `<option value="${c.id}">${c.name}</option>`;
+        });
+
+        div.innerHTML = `
+            <button class="b-del-btn" onclick="this.parentElement.remove()">×</button>
+            <input type="text" class="b-name" placeholder="Nombre del Curso" onchange="updateAllBuilderDropdowns()">
+            <div class="b-row">
+                <input type="number" class="b-cr" placeholder="Créd." style="width:60px" value="3">
+                <select class="b-type"><option value="O">Obligatorio</option><option value="E">Electivo</option></select>
+            </div>
+            <select class="b-req">${reqOptions}</select>
+        `;
+        list.appendChild(div);
+    };
+
+    // Función auxiliar para leer lo que el usuario ha escrito hasta ahora
+    function getCoursesFromBuilder(maxCycle) {
+        let gathered = [];
+        // Recorremos todos los ciclos
+        for(let i=1; i<=builderCycleCount; i++) {
+            if(maxCycle && i > maxCycle) break; // Parar si superamos el ciclo pedido
+            const list = document.getElementById(`b-list-${i}`);
+            if(!list) continue;
+            
+            // Recorrer tarjetas del ciclo
+            Array.from(list.children).forEach((card, idx) => {
+                const name = card.querySelector('.b-name').value.trim();
+                if(name) {
+                    // Generar un ID simple basado en el nombre (ej: MATEMATICAI)
+                    const id = name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) + '_' + i;
+                    gathered.push({ id: id, name: name, c: i });
+                }
+            });
+        }
+        return gathered;
+    }
+
+    // Actualizar todos los dropdowns de requisitos cuando alguien escribe un nombre
+    window.updateAllBuilderDropdowns = function() {
+        const allCourses = getCoursesFromBuilder(100); // Todos
+        // Recorrer todos los selects de requisito
+        document.querySelectorAll('.b-req').forEach(select => {
+            const currentVal = select.value;
+            // Buscar en qué ciclo está este select para mostrar solo anteriores
+            const parentCycle = select.closest('.builder-cycle').id.replace('b-cycle-','');
+            
+            let opts = '<option value="">-- Sin Requisito --</option>';
+            allCourses.forEach(c => {
+                if(c.c < parseInt(parentCycle)) { // Solo cursos de ciclos anteriores
+                    opts += `<option value="${c.id}">${c.name}</option>`;
+                }
+            });
+            select.innerHTML = opts;
+            select.value = currentVal; // Intentar mantener selección
+        });
+    };
+
+    // GUARDAR TODO
+    window.saveBuilderMalla = function() {
+        const newCourses = [];
+        const container = document.getElementById('builder-cycles-area');
+        
+        // 1. Recopilar datos
+        // Primero generamos IDs estables para todos
+        const rawData = [];
+        for(let i=1; i<=builderCycleCount; i++) {
+            const list = document.getElementById(`b-list-${i}`);
+            if(!list) continue;
+            Array.from(list.children).forEach(card => {
+                const name = card.querySelector('.b-name').value.trim();
+                const cr = parseInt(card.querySelector('.b-cr').value) || 3;
+                const type = card.querySelector('.b-type').value;
+                const reqID = card.querySelector('.b-req').value; // ID del requisito seleccionado
+                
+                if(name) {
+                    const id = name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) + '_' + i;
+                    rawData.push({
+                        id: id,
+                        name: name,
+                        cr: cr,
+                        c: i,
+                        t: type,
+                        req: reqID ? [reqID] : [], // Array de requisitos
+                        tags: [] // Tags vacíos por defecto
+                    });
+                }
+            });
+        }
+
+        if(rawData.length === 0) return alert("La malla está vacía. Agrega al menos un curso.");
+
+        if(confirm("¿Guardar esta nueva carrera? Se reiniciarán tus notas actuales.")) {
+            courses = rawData;
+            // Reiniciar progreso
+            approved = new Set();
+            approvedGrades = {};
+            saveCloudData();
+            alert("¡Carrera creada con éxito!");
+            location.reload();
+        }
+    };
+
     
     // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
@@ -1693,10 +1864,16 @@
     window.restoreAdminMalla = restoreAdminMalla;
     window.importCustomMalla = importCustomMalla;
     window.exportCurrentMalla = exportCurrentMalla;
-    // --- ESTAS SON LAS NUEVAS QUE DEBES AGREGAR: ---
+    
     window.restoreAdminMalla = restoreAdminMalla;
     window.importCustomMalla = importCustomMalla;
     window.exportCurrentMalla = exportCurrentMalla;
+
+    window.initBuilder = initBuilder;
+    window.addBuilderCycle = addBuilderCycle;
+    window.addBuilderCourse = addBuilderCourse;
+    window.saveBuilderMalla = saveBuilderMalla;
+    window.updateAllBuilderDropdowns = updateAllBuilderDropdowns;
     // -----------------------------------------------
 
     // Iniciar la app
