@@ -922,24 +922,95 @@
     }
 
     // =========================================================
-    //  ⬇️ EL CÓDIGO (FASE A - PARTE 2) ⬇️
+    //  ⬇️ LOGICA DE ÁREAS Y ESPECIALIDADES ⬇️
     // =========================================================
 
-    // Áreas por defecto (Admin). Se pueden sobrescribir.
-    let customAreas = [
-        { id: 'fin', name: 'Finanzas', color: '#27ae60' },
-        { id: 'mkt', name: 'Marketing', color: '#e67e22' },
-        { id: 'rrhh', name: 'RRHH', color: '#8e44ad' },
-        { id: 'op', name: 'Gestión/Ops', color: '#2980b9' }
-    ];
+    // Variable global para las áreas
+    let customAreas = []; 
 
-    // Intentar cargar áreas guardadas
-    if(localStorage.getItem('lumin_custom_areas')) {
-        customAreas = JSON.parse(localStorage.getItem('lumin_custom_areas'));
+    // 1. Inicializar (Cargar o Default)
+    function initCustomAreas() {
+        const stored = localStorage.getItem('lumin_custom_areas');
+        if(stored) {
+            customAreas = JSON.parse(stored);
+        } else {
+            // Default Admin UNMSM
+            customAreas = [
+                {id:'fin', name:'Finanzas', color:'#27ae60'},
+                {id:'mkt', name:'Marketing', color:'#e67e22'},
+                {id:'rrhh', name:'RRHH', color:'#8e44ad'},
+                {id:'op', name:'Gestión/Ops', color:'#2980b9'}
+            ];
+        }
+        renderCustomAreas();
+    }
+    
+    // 2. Renderizar los "chips" de colores
+    function renderCustomAreas() {
+        const div = document.getElementById('areas-list'); // Ojo: en tu HTML pusiste id="areas-list" en la config
+        const div2 = document.getElementById('custom-areas-list'); // Y id="custom-areas-list" en el builder
+        
+        // Función interna para dibujar en un div
+        const draw = (container) => {
+            if(!container) return;
+            container.innerHTML = '';
+            customAreas.forEach((tag, idx) => {
+                const chip = document.createElement('div');
+                chip.style.cssText = `background:${tag.color}; color:white; padding:5px 10px; border-radius:15px; font-size:0.8rem; display:flex; align-items:center; gap:5px; margin-bottom:5px;`;
+                chip.innerHTML = `${tag.name} <span style="cursor:pointer; font-weight:bold; margin-left:5px;" onclick="removeCustomArea(${idx})">×</span>`;
+                container.appendChild(chip);
+            });
+        };
+
+        draw(div);
+        draw(div2);
     }
 
+    // 3. Función del Botón "Crear"
+    window.addNewArea = function() {
+        const nameInput = document.getElementById('new-area-name');
+        const colorInput = document.getElementById('new-area-color');
+        
+        if(!nameInput) return; // Seguridad
+        
+        const name = nameInput.value.trim();
+        const color = colorInput.value;
+        
+        if(!name) return alert("Por favor escribe un nombre para el área.");
+        
+        // Crear un ID simple
+        const id = name.toLowerCase().substring(0, 4) + Math.floor(Math.random()*100);
+        
+        customAreas.push({ id, name, color });
+        localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
+        
+        nameInput.value = ''; // Limpiar input
+        renderCustomAreas();  // Actualizar visualmente
+        
+        // Actualizar los desplegables del constructor si existen
+        if(typeof updateAllBuilderDropdowns === 'function') updateAllBuilderDropdowns();
+    };
+
+    // 4. Función del Botón "Restaurar Default"
+    window.resetAreas = function() {
+        if(confirm("¿Restaurar las áreas por defecto de Administración?")) {
+            localStorage.removeItem('lumin_custom_areas');
+            initCustomAreas(); 
+            location.reload(); 
+        }
+    };
+
+    // 5. Función para eliminar un área (la X del chip)
+    window.removeCustomArea = function(idx) {
+        if(confirm("¿Eliminar esta área?")) {
+            customAreas.splice(idx, 1);
+            localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
+            renderCustomAreas();
+        }
+    };
+
     // =========================================================
-    //  ⬆️ FIN ⬆️
+    //  ⬆️ FIN LOGICA DE ÁREAS ⬆️
     // =========================================================
 
     const skillsDB = [
@@ -1576,19 +1647,43 @@
             }
         });
     }
-    function addToSchedule() {
+    // Función para agregar al horario (Permite cruces con advertencia)
+    window.addToSchedule = function() {
         const id = document.getElementById('sched-course').value;
         const d = parseInt(document.getElementById('sched-day').value);
         const s = parseInt(document.getElementById('sched-start').value);
         const e = parseInt(document.getElementById('sched-end').value);
-        if(!id || s>=e) return alert("Datos inválidos");
-        if(mySchedule.some(x => x.day===d && ((s>=x.start && s<x.end) || (e>x.start && e<=x.end) || (s<=x.start && e>=x.end)))) return alert("Cruce de horarios");
+        
+        if(!id) return alert("Selecciona un curso primero.");
+        if(s >= e) return alert("La hora de inicio debe ser menor a la de fin.");
+        
+        // 1. Verificamos si hay cruce, pero NO bloqueamos, solo avisamos.
+        const conflict = mySchedule.some(x => x.day === d && (
+            (s >= x.start && s < x.end) || 
+            (e > x.start && e <= x.end) || 
+            (s <= x.start && e >= x.end)
+        ));
+
+        if(conflict) {
+            // Si el usuario dice "Cancelar" en la alerta, entonces no agregamos.
+            if(!confirm("⚠️ ¡Atención! Este horario se cruza con otro curso. ¿Deseas agregarlo de todas formas?")) {
+                return; 
+            }
+        }
+        
+        // 2. Buscamos si el curso ya existe para usar el mismo color
         const exist = mySchedule.find(x => x.courseId === id);
+        // Si existe usamos su color, si no, uno aleatorio
         const color = exist ? exist.color : ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4dd0e1','#4db6ac','#81c784','#ffb74d'][Math.floor(Math.random()*10)];
-        mySchedule.push({courseId:id, day:d, start:s, end:e, color});
+        
+        // 3. Guardamos
+        mySchedule.push({courseId: id, day: d, start: s, end: e, color: color});
         localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule));
-        renderScheduleItems(); updateScheduleDropdowns();
-    }
+        
+        // 4. Actualizamos la vista
+        renderScheduleItems(); 
+        updateScheduleDropdowns();
+    };
     function removeFromSchedule(i) { mySchedule.splice(i,1); localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule)); renderScheduleItems(); updateScheduleDropdowns(); }
     function clearSchedule() { if(confirm("¿Borrar?")) { mySchedule=[]; localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule)); renderScheduleItems(); updateScheduleDropdowns(); } }
     
@@ -2063,56 +2158,55 @@
     // GUARDAR TODO
     window.saveBuilderMalla = function() {
         const newCourses = [];
-        const container = document.getElementById('builder-cycles-area');
-        
-        // 1. Recopilar datos
-        // Primero generamos IDs estables para todos
-        const rawData = [];
+        let hasError = false;
+
         for(let i=1; i<=builderCycleCount; i++) {
             const list = document.getElementById(`b-list-${i}`);
             if(!list) continue;
+            
             Array.from(list.children).forEach(card => {
                 const name = card.querySelector('.b-name').value.trim();
                 const cr = parseInt(card.querySelector('.b-cr').value) || 3;
                 const type = card.querySelector('.b-type').value;
                 
-                // --- CAMBIO 1: LEER REQUISITOS MÚLTIPLES ---
+                // Leer Requisitos
                 const reqSelect = card.querySelector('.b-req');
-                // Esto convierte la selección múltiple (Ctrl+Click) en una lista de IDs
                 const selectedReqs = Array.from(reqSelect.selectedOptions).map(opt => opt.value);
 
-                // --- CAMBIO 2: LEER EL ÁREA (COLOR) ---
+                // Leer Área
                 const areaSelect = card.querySelector('.b-area');
                 const areaVal = areaSelect ? areaSelect.value : "";
-                // Si seleccionó área, la guardamos en tags
                 const tags = areaVal ? [areaVal] : [];
 
                 if(name) {
+                    // Generar ID único
                     const id = name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) + '_' + i;
                     
-                    // IMPORTANTE: Asegúrate de que la variable donde guardas se llame 'newCourses'
-                    // (Si en tu código de arriba dice 'const rawData = []', cámbialo aquí también).
                     newCourses.push({
-                        id: id,
-                        name: name,
-                        cr: cr,
-                        c: i,
-                        t: type,
-                        req: selectedReqs, // Ahora guarda TODOS los requisitos seleccionados
-                        tags: tags         // Ahora guarda el ÁREA seleccionada
+                        id: id, name: name, cr: cr, c: i, t: type,
+                        req: selectedReqs, 
+                        tags: tags         
                     });
                 }
             });
         }
 
-        if(rawData.length === 0) return alert("La malla está vacía. Agrega al menos un curso.");
+        if(newCourses.length === 0) return alert("La malla está vacía. Agrega al menos un curso.");
 
         if(confirm("¿Guardar esta nueva carrera? Se reiniciarán tus notas actuales.")) {
-            courses = rawData;
-            // Reiniciar progreso
+            courses = newCourses; // Actualizamos la variable global
+            
+            // Guardamos en memoria
+            localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
+            // También guardamos las áreas personalizadas actuales
+            localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
+
+            // Reiniciar progreso para evitar bugs con cursos antiguos
             approved = new Set();
             approvedGrades = {};
-            saveCloudData();
+            localStorage.removeItem('unmsm_adm_v11_c');
+            localStorage.removeItem('unmsm_adm_v11_g');
+            
             alert("¡Carrera creada con éxito!");
             location.reload();
         }
