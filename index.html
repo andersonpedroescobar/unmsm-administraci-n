@@ -170,9 +170,9 @@
             <h2 style="margin:0 0 10px 0; color:#8a0303;">Acceso Restringido</h2>
             <p style="margin-bottom:25px; color:#666;">Ingresa con tu correo autorizado.</p>
             
-            <button id="google-login-btn" style="background:#4285F4; color:white; border:none; padding:12px 25px; border-radius:50px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:1rem; box-shadow:0 2px 5px rgba(0,0,0,0.2); width:100%;">
-                <span style="background:white; border-radius:50%; padding:2px; display:flex;"><img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18"></span>
-                Iniciar sesión con Google
+            <button id="btn-login-google" style="background:#4285F4; color:white; border:none; padding:12px 25px; border-radius:50px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:1rem; box-shadow:0 2px 5px rgba(0,0,0,0.2); width:100%;">
+              <span style="background:white; border-radius:50%; padding:2px; display:flex;"><img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18"></span>
+              Iniciar sesión con Google
             </button>
             <p id="login-error" style="color:red; margin-top:15px; font-size:0.9rem; display:none; font-weight:bold;"></p>
         </div>
@@ -890,6 +890,64 @@
     let skillsRadarInstance = null;
     let areaProgressInstance = null;
     let gradesDistInstance = null;
+
+    // =================================================================
+    // 3. LOGICA DE AUTENTICACIÓN Y BASE DE DATOS
+    // =================================================================
+
+    // Función que activa el popup de Google
+    async function triggerGoogleLogin() {
+        const errBox = document.getElementById('login-error');
+        errBox.style.display = 'none'; // Ocultar error previo
+        console.log("🔵 Botón presionado... conectando con Google..."); 
+
+        try {
+            const result = await signInWithPopup(auth, provider);
+            console.log("✅ Login exitoso, verificando correo...");
+            checkUserAccess(result.user);
+        } catch (error) {
+            console.error("❌ Error Login:", error);
+            errBox.style.display = 'block';
+            errBox.innerText = "Error: " + error.message;
+            
+            if(error.code === 'auth/popup-closed-by-user') {
+                errBox.innerText = "Cerraste la ventana de Google antes de terminar.";
+            }
+            if(error.code === 'auth/unauthorized-domain') {
+                errBox.innerText = "Error de Dominio: Agrega este link en Firebase > Authentication > Settings.";
+            }
+        }
+    }
+
+    // Buscar el botón y pegarle el evento (ESPERA A QUE CARGUE)
+    // Usamos setTimeout para asegurar que el HTML ya existe
+    setTimeout(() => {
+        const btnLogin = document.getElementById('btn-login-google');
+        if(btnLogin) {
+            console.log("Botón de login encontrado y activado.");
+            btnLogin.addEventListener('click', triggerGoogleLogin);
+        } else {
+            console.error("⛔ ERROR CRÍTICO: No encuentro el botón con id 'btn-login-google'");
+        }
+    }, 500);
+
+    // Verificación de estado (Persistencia)
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            if (ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
+                currentUser = user;
+                document.getElementById('login-overlay').style.display = 'none';
+                if(document.getElementById('user-email-display')) {
+                    document.getElementById('user-email-display').innerText = user.email;
+                }
+                await loadCloudData();
+                initApp();
+            } else {
+                alert("Acceso denegado. Tu correo no está en la lista.");
+                signOut(auth);
+            }
+        }
+    });
 
     // ================= INIT =================
     function init() {
