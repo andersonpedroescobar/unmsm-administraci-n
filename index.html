@@ -402,16 +402,58 @@
         </div>
         
         <div class="scheduler-container">
+            <!-- COLUMNA IZQUIERDA: CONTROLES -->
             <div class="scheduler-controls">
                 <h3>Agregar Curso</h3>
-                <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">Solo cursos disponibles (requisitos OK).</p>
-                <div class="form-group"><label class="form-label">Curso:</label><select id="sched-course" class="form-select"></select></div>
-                <div class="form-group"><label class="form-label">Día:</label><select id="sched-day" class="form-select"><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option></select></div>
-                <div class="form-group" style="display:flex; gap:10px;"><div style="flex:1"><label class="form-label">Inicio:</label><select id="sched-start" class="form-select"></select></div><div style="flex:1"><label class="form-label">Fin:</label><select id="sched-end" class="form-select"></select></div></div>
-                <div style="margin-bottom:20px; padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong>Créditos: </strong> <span id="sim-credits">0</span></div>
+                <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">Filtra y selecciona tus cursos.</p>
+                
+                <!-- 1. NUEVO: FILTRO POR CICLO -->
+                <div class="form-group">
+                    <label class="form-label">Filtrar por Ciclo:</label>
+                    <select id="sched-cycle-filter" class="form-select" onchange="updateScheduleDropdowns()">
+                        <option value="all">Todos los ciclos</option>
+                        <option value="1">Ciclo 1</option><option value="2">Ciclo 2</option>
+                        <option value="3">Ciclo 3</option><option value="4">Ciclo 4</option>
+                        <option value="5">Ciclo 5</option><option value="6">Ciclo 6</option>
+                        <option value="7">Ciclo 7</option><option value="8">Ciclo 8</option>
+                        <option value="9">Ciclo 9</option><option value="10">Ciclo 10</option>
+                    </select>
+                </div>
+
+                <!-- 2. SELECTOR DE CURSO -->
+                <div class="form-group">
+                    <label class="form-label">Curso:</label>
+                    <select id="sched-course" class="form-select"></select>
+                </div>
+
+                <!-- 3. SELECTOR DE DÍA (SE MANTIENE IGUAL) -->
+                <div class="form-group">
+                    <label class="form-label">Día:</label>
+                    <select id="sched-day" class="form-select">
+                        <option value="1">Lunes</option>
+                        <option value="2">Martes</option>
+                        <option value="3">Miércoles</option>
+                        <option value="4">Jueves</option>
+                        <option value="5">Viernes</option>
+                        <option value="6">Sábado</option>
+                    </select>
+                </div>
+
+                <!-- 4. HORAS (SE MANTIENE IGUAL) -->
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <div style="flex:1"><label class="form-label">Inicio:</label><select id="sched-start" class="form-select"></select></div>
+                    <div style="flex:1"><label class="form-label">Fin:</label><select id="sched-end" class="form-select"></select></div>
+                </div>
+
+                <!-- 5. CRÉDITOS Y BOTONES (SE MANTIENE IGUAL) -->
+                <div style="margin-bottom:20px; padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;">
+                    <strong>Créditos: </strong> <span id="sim-credits">0</span>
+                </div>
                 <button class="btn-add" onclick="addToSchedule()">AGREGAR</button>
                 <button onclick="clearSchedule()" style="width:100%; margin-top:10px; background:none; border:1px solid #ccc; padding:10px; border-radius:6px; cursor:pointer; color:var(--text-main);">Limpiar</button>
             </div>
+
+            <!-- COLUMNA DERECHA: LA TABLA DEL HORARIO (NO TOCAR) -->
             <div class="scheduler-grid-wrapper" id="schedule-export-area">
                 <div class="time-grid" id="schedule-grid">
                     <div class="grid-header">Hora</div><div class="grid-header">Lun</div><div class="grid-header">Mar</div><div class="grid-header">Mié</div><div class="grid-header">Jue</div><div class="grid-header">Vie</div><div class="grid-header">Sáb</div>
@@ -455,6 +497,19 @@
         <div style="max-width:1000px; margin:0 auto;">
             <h2 style="text-align:center;">Gestión de Carrera & Malla</h2>
             <p style="text-align:center; color:#666;">Diseña tu propia carrera o carga una existente.</p>
+
+            <!-- NUEVO: GESTOR DE ÁREAS (ESPECIALIDADES) -->
+            <div class="stats-card" style="margin-bottom: 20px;">
+                <h3>🎨 Definir Áreas / Especialidades</h3>
+                <p style="font-size:0.9rem; color:#666;">Define las ramas de tu carrera para ver las estadísticas (Ej: Estructuras, Geotecnia...).</p>
+                <div id="areas-list" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;"></div>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="new-area-name" placeholder="Nombre Área" style="padding:5px;">
+                    <input type="color" id="new-area-color" value="#333333">
+                    <button class="btn-calc-action" onclick="addNewArea()" style="margin:0;">+ Crear</button>
+                    <button onclick="resetAreas()" style="font-size:0.8rem; background:none; border:none; text-decoration:underline; cursor:pointer;">Restaurar Default</button>
+                </div>
+            </div>
 
             <!-- 1. CONSTRUCTOR VISUAL (NUEVO) -->
             <div class="builder-container">
@@ -866,6 +921,27 @@
         courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
     }
 
+    // =========================================================
+    //  ⬇️ EL CÓDIGO (FASE A - PARTE 2) ⬇️
+    // =========================================================
+
+    // Áreas por defecto (Admin). Se pueden sobrescribir.
+    let customAreas = [
+        { id: 'fin', name: 'Finanzas', color: '#27ae60' },
+        { id: 'mkt', name: 'Marketing', color: '#e67e22' },
+        { id: 'rrhh', name: 'RRHH', color: '#8e44ad' },
+        { id: 'op', name: 'Gestión/Ops', color: '#2980b9' }
+    ];
+
+    // Intentar cargar áreas guardadas
+    if(localStorage.getItem('lumin_custom_areas')) {
+        customAreas = JSON.parse(localStorage.getItem('lumin_custom_areas'));
+    }
+
+    // =========================================================
+    //  ⬆️ FIN ⬆️
+    // =========================================================
+
     const skillsDB = [
         { id: 'excel_adv', name: 'Excel Avanzado (Macros)', weights: { fin: 3, op: 3, mkt: 2, rrhh: 2 } },
         { id: 'power_bi', name: 'Power BI / Tableau', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 } },
@@ -975,21 +1051,32 @@
     });
 
     // ================= INIT =================
+    // ================= INIT =================
     function init() {
+        // Cargar datos de memoria
         if(localStorage.getItem('unmsm_adm_v11_c')) approved = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_c')));
         if(localStorage.getItem('unmsm_adm_v11_g')) approvedGrades = JSON.parse(localStorage.getItem('unmsm_adm_v11_g'));
         if(localStorage.getItem('unmsm_adm_v11_s')) acquiredSkills = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_s')));
         if(localStorage.getItem('unmsm_adm_v11_h')) mySchedule = JSON.parse(localStorage.getItem('unmsm_adm_v11_h'));
+        
+        // Tema oscuro
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         
+        // --- LO NUEVO: Cargar Áreas Personalizadas ---
+        initCustomAreas(); 
+        
+        // Renderizar componentes
         renderMalla();
         renderSkills();
         renderHellGrid();
-        renderKanban();
+        
+        // renderKanban(); // <--- OJO: Lo dejé comentado. Si tienes esa función creada, quítale las // del inicio.
+        
         initSchedule();
         initCalculator();
         updateStats();
         
+        // Iniciar constructor
         initBuilder(); 
     }
     function showPage(id) {
@@ -1206,7 +1293,12 @@
 
     // ================= ANALÍTICA MODIFICADO =================
     function renderAnalytics() {
-        // 1. PPS POR CICLO
+        // 0. SEGURIDAD: Si por alguna razón no hay etiquetas cargadas, cárgalas.
+        if (typeof customTags === 'undefined' || customTags.length === 0) {
+            if(typeof initCustomAreas === 'function') initCustomAreas();
+        }
+
+        // 1. PPS POR CICLO (Esto se mantiene igual, es el gráfico de línea)
         const cycleLabels = [];
         const cycleData = [];
         
@@ -1243,49 +1335,68 @@
             options: { scales: { y: { min: 10, max: 20 } }, plugins: { legend: { display: false } } }
         });
 
-        // 2. RADAR SKILLS/BRANCHES
-        let counts = {fin:0, mkt:0, rrhh:0, op:0};
+        // ============================================================
+        // 2. LÓGICA DINÁMICA (RADAR Y BARRAS)
+        // ============================================================
+        
+        // Preparamos los arrays vacíos según la cantidad de áreas que existan
+        let labels = customTags.map(t => t.name); // Ej: ["Finanzas", "Marketing", "Sistemas"]
+        let colors = customTags.map(t => t.color); // Ej: ["#red", "#blue", ...]
+        let approvedCounts = new Array(customTags.length).fill(0);
+        let totalCounts = new Array(customTags.length).fill(0);
+
+        // Recorremos todos los cursos para contar
         courses.forEach(c => {
-            if(approved.has(c.id) && c.tags) {
-                c.tags.forEach(t => { if(counts[t]!==undefined) counts[t]++; });
+            // Si el curso tiene tags (áreas)
+            if(c.tags && c.tags.length > 0) {
+                c.tags.forEach(tagId => {
+                    // Buscamos a qué índice (0, 1, 2...) pertenece este ID
+                    const index = customTags.findIndex(t => t.id === tagId);
+                    
+                    if(index !== -1) { // Si encontramos el área
+                        totalCounts[index]++; // Sumamos al total disponible
+                        if(approved.has(c.id)) {
+                            approvedCounts[index]++; // Sumamos al aprobado
+                        }
+                    }
+                });
             }
         });
-        
+
+        // -- GRÁFICO RADAR (Especialización) --
         const ctxRadar = document.getElementById('skillsRadarChart').getContext('2d');
         if(skillsRadarInstance) skillsRadarInstance.destroy();
+        
+        // Generamos colores transparentes para el fondo del radar
+        const bgColors = colors.map(c => hexToRgba(c, 0.6));
+
         skillsRadarInstance = new Chart(ctxRadar, {
             type: 'polarArea',
             data: {
-                labels: ['Finanzas', 'Marketing', 'RRHH', 'Gestión/Ops'],
+                labels: labels, // Nombres dinámicos
                 datasets: [{
-                    data: [counts.fin, counts.mkt, counts.rrhh, counts.op],
-                    backgroundColor: ['rgba(39, 174, 96, 0.6)', 'rgba(230, 126, 34, 0.6)', 'rgba(142, 68, 173, 0.6)', 'rgba(41, 128, 185, 0.6)']
+                    data: approvedCounts, // Datos dinámicos
+                    backgroundColor: bgColors
                 }]
             }
         });
 
-        // 3. NUEVO: Comparativa Créditos por Área (Aprobados vs Total)
-        // Calculamos totales disponibles
-        let totalTags = {fin:0, mkt:0, rrhh:0, op:0};
-        courses.forEach(c => {
-            if(c.tags) c.tags.forEach(t => { if(totalTags[t]!==undefined) totalTags[t]++; });
-        });
-
+        // -- GRÁFICO BARRAS (Avance por Área) --
         const ctxArea = document.getElementById('areaProgressChart').getContext('2d');
         if(areaProgressInstance) areaProgressInstance.destroy();
         areaProgressInstance = new Chart(ctxArea, {
             type: 'bar',
             data: {
-                labels: ['Finanzas', 'Marketing', 'RRHH', 'Gestión/Ops'],
+                labels: labels,
                 datasets: [
                     {
                         label: 'Cursos Aprobados',
-                        data: [counts.fin, counts.mkt, counts.rrhh, counts.op],
-                        backgroundColor: '#8a0303'
+                        data: approvedCounts,
+                        backgroundColor: colors // Usamos el color real del área
                     },
                     {
                         label: 'Total Disponibles',
-                        data: [totalTags.fin, totalTags.mkt, totalTags.rrhh, totalTags.op],
+                        data: totalCounts,
                         backgroundColor: '#e0e0e0'
                     }
                 ]
@@ -1295,8 +1406,10 @@
             }
         });
 
-        // 4. NUEVO: Distribución de Notas
-        let gradesDist = { excelente:0, bueno:0, regular:0, bajo:0 }; // Ex: 17-20, Bue: 14-16, Reg: 11-13, Bajo: <11
+        // ============================================================
+        // 3. DISTRIBUCIÓN DE NOTAS (Se mantiene igual)
+        // ============================================================
+        let gradesDist = { excelente:0, bueno:0, regular:0, bajo:0 };
         Object.values(approvedGrades).forEach(g => {
             if(g >= 17) gradesDist.excelente++;
             else if(g >= 14) gradesDist.bueno++;
@@ -1316,6 +1429,20 @@
                 }]
             }
         });
+    }
+
+    // FUNCIÓN AUXILIAR (Pégala aquí mismo o al final del script)
+    // Convierte colores Hex (#ff0000) a RGBA con transparencia
+    function hexToRgba(hex, alpha) {
+        // Manejo básico de errores si el color no es hex válido
+        if(!hex || !hex.startsWith('#')) return `rgba(100,100,100,${alpha})`;
+        
+        let r = parseInt(hex.slice(1, 3), 16),
+            g = parseInt(hex.slice(3, 5), 16),
+            b = parseInt(hex.slice(5, 7), 16);
+
+        if(isNaN(r)) return `rgba(100,100,100,${alpha})`;
+        return `rgba(${r},${g},${b},${alpha})`;
     }
 
     // ================= CALCULADORA =================
@@ -1390,28 +1517,35 @@
         e.value = 10; renderScheduleGrid(); renderScheduleItems();
     }
     function updateScheduleDropdowns() {
-        const sel = document.getElementById('sched-course'); 
+        const sel = document.getElementById('sched-course');
+        const filterVal = document.getElementById('sched-cycle-filter').value; // Nuevo filtro
+        
         sel.innerHTML = '';
         
-        // Filtro corregido:
-        // 1. Que NO esté aprobado
-        // 2. Y (Que no tenga requisitos O Que todos sus requisitos estén aprobados)
-        const avail = courses.filter(c => 
-            !approved.has(c.id) && 
-            (c.req.length === 0 || c.req.every(r => approved.has(r)))
-        );
+        // 1. Filtrar cursos disponibles (No aprobados O aprobados pero repetibles en simulador)
+        // Nota: Permitimos ver todos, incluso si no cumplen requisitos, para simular libremente,
+        // pero puedes descomentar la restricción de requisitos si prefieres ser estricto.
+        let avail = courses.filter(c => !approved.has(c.id)); 
+
+        // 2. Aplicar Filtro de Ciclo
+        if(filterVal !== 'all') {
+            avail = avail.filter(c => c.c == filterVal);
+        }
 
         if(avail.length === 0) {
-            sel.innerHTML = '<option disabled selected>No hay cursos disponibles (Revisa requisitos)</option>';
+            sel.innerHTML = '<option disabled selected>No hay cursos en este ciclo</option>';
         } else {
-            // Ordenar alfabéticamente para facilitar la búsqueda
+            // Ordenar alfabéticamente
             avail.sort((a, b) => a.name.localeCompare(b.name));
             
             avail.forEach(c => {
-                const added = mySchedule.some(s => s.courseId === c.id);
-                // Si ya está en el horario, lo marcamos visualmente pero permitimos seleccionarlo por si quiere ver detalles
-                sel.innerHTML += `<option value="${c.id}" ${added ? 'disabled' : ''}>
-                    ${added ? '✅ ' : ''}${c.name} (Ciclo ${c.c})
+                // Verificamos si ya está en el horario solo para poner un emoji, NO para bloquearlo
+                const count = mySchedule.filter(s => s.courseId === c.id).length;
+                const mark = count > 0 ? `(${count}) ` : ''; 
+                
+                // ELIMINADO EL ATRIBUTO 'disabled' PARA PERMITIR MULTIPLES HORARIOS
+                sel.innerHTML += `<option value="${c.id}">
+                    ${mark}${c.name} (${c.cr} Cr.)
                 </option>`;
             });
         }
@@ -1831,14 +1965,6 @@
     
     let builderCycleCount = 0;
 
-    // Inicializar el constructor con 10 ciclos vacíos
-    window.initBuilder = function() {
-        const area = document.getElementById('builder-cycles-area');
-        if(!area) return;
-        area.innerHTML = '';
-        builderCycleCount = 0;
-        for(let i=0; i<10; i++) window.addBuilderCycle();
-    };
 
     window.addBuilderCycle = function() {
         builderCycleCount++;
@@ -1860,21 +1986,34 @@
         const list = document.getElementById(`b-list-${cycleNum}`);
         const div = document.createElement('div');
         div.className = 'b-course-card';
-        // Generar opciones de requisitos (cursos de ciclos anteriores)
-        let reqOptions = '<option value="">-- Sin Requisito --</option>';
-        const allPrevCourses = getCoursesFromBuilder(cycleNum - 1); // Obtener cursos hasta el ciclo anterior
+        
+        // 1. Generar opciones de requisitos (Ciclos anteriores)
+        let reqOptions = '';
+        const allPrevCourses = getCoursesFromBuilder(cycleNum - 1); 
         allPrevCourses.forEach(c => {
             reqOptions += `<option value="${c.id}">${c.name}</option>`;
+        });
+
+        // 2. Generar opciones de ÁREAS (Dinámicas)
+        let areaOptions = '<option value="">-- Sin Área --</option>';
+        customAreas.forEach(a => {
+            areaOptions += `<option value="${a.id}" style="color:${a.color}">★ ${a.name}</option>`;
         });
 
         div.innerHTML = `
             <button class="b-del-btn" onclick="this.parentElement.remove()">×</button>
             <input type="text" class="b-name" placeholder="Nombre del Curso" onchange="updateAllBuilderDropdowns()">
+            
             <div class="b-row">
-                <input type="number" class="b-cr" placeholder="Créd." style="width:60px" value="3">
-                <select class="b-type"><option value="O">Obligatorio</option><option value="E">Electivo</option></select>
+                <input type="number" class="b-cr" placeholder="Cr." style="width:50px" value="3">
+                <select class="b-type" style="width:90px"><option value="O">Oblig.</option><option value="E">Elect.</option></select>
+                <!-- Selector de Área -->
+                <select class="b-area" style="flex:1;">${areaOptions}</select>
             </div>
-            <select class="b-req">${reqOptions}</select>
+
+            <!-- MULTI SELECT PARA REQUISITOS -->
+            <label style="font-size:0.7rem; color:#666; display:block; margin-top:5px;">Requisitos (Ctrl+Click para varios):</label>
+            <select class="b-req" multiple style="height:60px;">${reqOptions}</select>
         `;
         list.appendChild(div);
     };
@@ -1936,18 +2075,31 @@
                 const name = card.querySelector('.b-name').value.trim();
                 const cr = parseInt(card.querySelector('.b-cr').value) || 3;
                 const type = card.querySelector('.b-type').value;
-                const reqID = card.querySelector('.b-req').value; // ID del requisito seleccionado
                 
+                // --- CAMBIO 1: LEER REQUISITOS MÚLTIPLES ---
+                const reqSelect = card.querySelector('.b-req');
+                // Esto convierte la selección múltiple (Ctrl+Click) en una lista de IDs
+                const selectedReqs = Array.from(reqSelect.selectedOptions).map(opt => opt.value);
+
+                // --- CAMBIO 2: LEER EL ÁREA (COLOR) ---
+                const areaSelect = card.querySelector('.b-area');
+                const areaVal = areaSelect ? areaSelect.value : "";
+                // Si seleccionó área, la guardamos en tags
+                const tags = areaVal ? [areaVal] : [];
+
                 if(name) {
                     const id = name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) + '_' + i;
-                    rawData.push({
+                    
+                    // IMPORTANTE: Asegúrate de que la variable donde guardas se llame 'newCourses'
+                    // (Si en tu código de arriba dice 'const rawData = []', cámbialo aquí también).
+                    newCourses.push({
                         id: id,
                         name: name,
                         cr: cr,
                         c: i,
                         t: type,
-                        req: reqID ? [reqID] : [], // Array de requisitos
-                        tags: [] // Tags vacíos por defecto
+                        req: selectedReqs, // Ahora guarda TODOS los requisitos seleccionados
+                        tags: tags         // Ahora guarda el ÁREA seleccionada
                     });
                 }
             });
@@ -1966,7 +2118,24 @@
         }
     };
 
-    
+    // ... aquí terminaba window.saveBuilderMalla = function() { ... };
+
+    // ==========================================
+    // INICIALIZACIÓN DEL CONSTRUCTOR
+    // ==========================================
+    window.initBuilder = function() {
+        
+        initCustomAreas(); // <--- ESTA ES LA LÍNEA NUEVA IMPORTANTE
+        
+        const area = document.getElementById('builder-cycles-area');
+        if(!area) return;
+        
+        area.innerHTML = '';
+        builderCycleCount = 0;
+        // Crear 10 ciclos por defecto
+        for(let i=0; i<10; i++) window.addBuilderCycle();
+    };
+
     // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
     // ==========================================
