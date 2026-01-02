@@ -51,7 +51,16 @@
         .nav-brand { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
         .nav-logo-img { height: 50px; width: auto; background: white; border-radius: 50%; padding: 2px; }
 
-        .nav-menu { display: flex; gap: 10px; align-items: center; }
+        .nav-menu { 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            overflow-x: auto; /* PERMITE SCROLL HORIZONTAL */
+            padding-bottom: 5px; 
+            max-width: 100%;
+            scrollbar-width: none; /* Ocultar barra en Firefox */
+        }
+        .nav-menu::-webkit-scrollbar { display: none; /* Ocultar barra en Chrome */ }
         .nav-btn { 
             background: rgba(255,255,255,0.1); border: none; color: white; 
             padding: 8px 15px; cursor: pointer; border-radius: 20px; 
@@ -182,6 +191,25 @@
             background: var(--bg-card);
             color: var(--text-main);
         }
+
+        /*  ⬇️⬇️⬇️ EL CÓDIGO ⬇️⬇️⬇️ */
+
+        /* --- COMUNIDAD STYLES --- */
+        .repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .repo-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; }
+        .repo-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        
+        .repo-header { height: 100px; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; }
+        .repo-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        
+        .repo-uni { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; color: #888; margin-bottom: 5px; }
+        .repo-career { font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: var(--text-main); line-height: 1.3; }
+        .repo-stats { font-size: 0.85rem; color: #666; margin-bottom: 20px; display: flex; gap: 15px; }
+        
+        .btn-load-repo { width: 100%; background: var(--text-main); color: var(--bg-card); border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: auto; transition: opacity 0.2s; }
+        .btn-load-repo:hover { opacity: 0.8; }
+
+        /*  ⬆️⬆️⬆️  fin del código ⬆️⬆️⬆️ */
     </style>
 </head>
 <body>
@@ -221,6 +249,10 @@
             <button class="nav-btn" onclick="showPage('skills')"><span class="material-icons">psychology</span> Skills</button>
             <button class="nav-btn" onclick="showPage('simulador')"><span class="material-icons">schedule</span> Simulador</button>
             <button class="nav-btn" onclick="showPage('recursos')"><span class="material-icons">link</span> Recursos</button>
+            <button class="icon-btn" onclick="toggleTheme()" title="Modo Oscuro"><span class="material-icons">dark_mode</span></button>
+            <!-- NUEVO BOTÓN COMUNIDAD -->
+            <button class="nav-btn" onclick="showPage('comunidad')"><span class="material-icons">public</span> Comunidad</button>
+            
             <button class="icon-btn" onclick="toggleTheme()" title="Modo Oscuro"><span class="material-icons">dark_mode</span></button>
         </div>
     </nav>
@@ -361,25 +393,18 @@
     <div id="page-skills" class="page-section">
         <h2 style="text-align:center; margin-bottom:20px;">Perfil Profesional (Skills)</h2>
         <div class="profile-dashboard">
-            <div class="profile-card">
-                <div class="profile-title" style="color:var(--c-fin)"><span class="material-icons">attach_money</span> Finanzas</div>
-                <div class="profile-percent" id="pct-fin">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-fin" style="background:var(--c-fin)"></div></div>
-            </div>
-            <div class="profile-card">
-                <div class="profile-title" style="color:var(--c-mkt)"><span class="material-icons">campaign</span> Marketing</div>
-                <div class="profile-percent" id="pct-mkt">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-mkt" style="background:var(--c-mkt)"></div></div>
-            </div>
-            <div class="profile-card">
-                <div class="profile-title" style="color:var(--c-rrhh)"><span class="material-icons">groups</span> RRHH</div>
-                <div class="profile-percent" id="pct-rrhh">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-rrhh" style="background:var(--c-rrhh)"></div></div>
-            </div>
+            <!-- Dentro de <div class="profile-dashboard"> -->
             <div class="profile-card">
                 <div class="profile-title" style="color:var(--c-op)"><span class="material-icons">settings</span> Gestión/Ops</div>
                 <div class="profile-percent" id="pct-op">0%</div>
                 <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-op" style="background:var(--c-op)"></div></div>
+            </div>
+            
+            <!-- NUEVO: LOGÍSTICA -->
+            <div class="profile-card">
+                <div class="profile-title" style="color:#795548"><span class="material-icons">local_shipping</span> Logística</div>
+                <div class="profile-percent" id="pct-log">0%</div>
+                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-log" style="background:#795548"></div></div>
             </div>
         </div>
         <h3 style="margin-bottom:15px; color:#555;">Marcar Herramientas Dominadas:</h3>
@@ -493,6 +518,7 @@
     </div>
 
     <!-- PÁGINA 9: CONFIGURACIÓN (CONSTRUCTOR VISUAL) -->
+    <!-- PÁGINA 9: CONFIGURACIÓN (CONSTRUCTOR VISUAL) -->
     <div id="page-config" class="page-section">
         <div style="max-width:1000px; margin:0 auto;">
             <h2 style="text-align:center;">Gestión de Carrera & Malla</h2>
@@ -511,7 +537,7 @@
                 </div>
             </div>
 
-            <!-- 1. CONSTRUCTOR VISUAL (NUEVO) -->
+            <!-- 1. CONSTRUCTOR VISUAL -->
             <div class="builder-container">
                 <div class="builder-header">
                     <h3>🛠️ Constructor de Malla Interactivo</h3>
@@ -530,21 +556,32 @@
 
             <hr style="margin:40px 0; border:0; border-top:1px solid #ddd;">
 
-            <!-- 2. ZONA AVANZADA (JSON Y PRESETS) -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; opacity:0.8;">
+            <!-- ======================================================= -->
+            <!-- 2. ZONA AVANZADA NUEVA (AQUÍ ES DONDE CAMBIASTE) -->
+            <!-- ======================================================= -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:30px;">
+                
+                <!-- Panel de Importar/Restaurar -->
                 <div class="stats-card">
-                    <h4>🔄 Opciones Rápidas</h4>
-                    <button class="btn-export" onclick="loadPresetMalla('admin')">Restaurar Administración UNMSM</button>
-                    <div style="margin-top:10px; font-size:0.8rem; color:#666;">
-                        <span id="user-email-display">Usuario</span> | <span style="cursor:pointer; color:blue;" onclick="exportMallaJSON()">Copiar JSON</span>
+                    <h4>📥 Cargar Malla Externa</h4>
+                    <p style="font-size:0.8rem; color:#666;">Pega aquí el código JSON que te pasó un amigo.</p>
+                    <textarea id="json-import-area" style="width:100%; height:60px; border:1px solid #ccc; font-size:0.7rem; margin-bottom:10px;" placeholder='[{"id":"... }]'></textarea>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-export" onclick="importCustomMalla()">Cargar JSON</button>
+                        <button class="btn-export" style="background:#c0392b;" onclick="restoreAdminMalla()">Restaurar Admin</button>
                     </div>
                 </div>
-                <div class="stats-card">
-                    <h4>📥 Importar Código (JSON)</h4>
-                    <textarea id="json-malla-area" style="width:100%; height:50px; border:1px solid #ccc; font-size:0.7rem;"></textarea>
-                    <button class="btn-export" onclick="importMallaJSON()">Cargar JSON</button>
+
+                <!-- Panel de Resultado (Generado al guardar) -->
+                <div class="stats-card" id="share-panel" style="display:none; border: 2px solid #27ae60; background:#f0f9f4;">
+                    <h4 style="color:#27ae60;">✅ ¡Malla Creada! Compártela:</h4>
+                    <p style="font-size:0.8rem;">Copia este código y pásaselo a tus compañeros para que tengan tu misma malla.</p>
+                    <textarea id="json-export-area" readonly style="width:100%; height:80px; border:1px solid #27ae60; font-size:0.7rem; background:white;"></textarea>
+                    <button class="btn-calc-action" onclick="copyExportJson()">Copiar al Portapapeles</button>
                 </div>
             </div>
+            <!-- ======================================================= -->
+
         </div>
     </div>
 
@@ -659,6 +696,15 @@
             .msg-ai code { background: #eee; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
         </style>
 
+        </div>
+    </div>
+    <!-- PÁGINA 10: COMUNIDAD / REPOSITORIO -->
+    <div id="page-comunidad" class="page-section">
+        <h2 style="text-align:center; margin-bottom:10px;">🌎 Comunidad de Mallas</h2>
+        <p style="text-align:center; color:#666; margin-bottom:30px;">Explora y carga mallas creadas por otros estudiantes de diferentes universidades.</p>
+
+        <div class="repo-grid" id="repo-container">
+            <!-- Aquí se inyectarán las tarjetas con JS -->
         </div>
     </div>
 
@@ -1036,9 +1082,9 @@
     // =========================================================
 
     const skillsDB = [
-        { id: 'excel_adv', name: 'Excel Avanzado (Macros)', weights: { fin: 3, op: 3, mkt: 2, rrhh: 2 } },
-        { id: 'power_bi', name: 'Power BI / Tableau', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 } },
-        { id: 'sql', name: 'SQL para Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 1 } },
+        { id: 'excel_adv', name: 'Excel Avanzado (Macros)', weights: { fin: 3, op: 3, mkt: 2, rrhh: 2, log: 3 } },
+        { id: 'power_bi', name: 'Power BI / Tableau', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2, log: 3 } },
+        { id: 'sql', name: 'SQL para Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 1, log: 2 } },
         { id: 'python', name: 'Python (Analítica)', weights: { fin: 3, op: 2, mkt: 2, rrhh: 1 } },
         { id: 'ingles', name: 'Inglés de Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 } },
         { id: 'mat_fin', name: 'Matemática Financiera', weights: { fin: 3, op: 1 } },
@@ -1049,7 +1095,7 @@
         { id: 'riesgos', name: 'Gestión de Riesgos', weights: { fin: 3, op: 2 } },
         { id: 'bloomberg', name: 'Bloomberg Terminal', weights: { fin: 3 } },
         { id: 'fintech', name: 'Fintech & Blockchain', weights: { fin: 2, mkt: 1 } },
-        { id: 'inv_merc', name: 'Investigación Mercados', weights: { mkt: 3, op: 1 } },
+        { id: 'inv_merc', name: 'Investigación Mercados', weights: { mkt: 3, log: 1 } },
         { id: 'seo_sem', name: 'SEO/SEM (Google Ads)', weights: { mkt: 3 } },
         { id: 'branding', name: 'Branding', weights: { mkt: 3 } },
         { id: 'analytics', name: 'Google Analytics 4', weights: { mkt: 3, op: 1 } },
@@ -1065,14 +1111,14 @@
         { id: 'linkedin', name: 'LinkedIn Recruiter', weights: { rrhh: 3 } },
         { id: 'sst', name: 'Seguridad y Salud (SST)', weights: { rrhh: 3, op: 2 } },
         { id: 'people_analytics', name: 'People Analytics', weights: { rrhh: 3, op: 1 } },
-        { id: 'supply', name: 'Supply Chain Mgmt', weights: { op: 3, mkt: 1, fin: 1 } },
+        { id: 'supply', name: 'Supply Chain Mgmt', weights: { op: 3, log: 3 } },
         { id: 'bpm', name: 'Procesos BPM (Bizagi)', weights: { op: 3 } },
         { id: 'planeamiento', name: 'Planeamiento Estratégico', weights: { op: 3, fin: 1, mkt: 1, rrhh: 1 } },
-        { id: 'gestion_pub', name: 'Gestión Pública (SIAF)', weights: { op: 3 } },
+        { id: 'gestion_pub', name: 'Gestión Pública (SIAF)', weights: { op: 3, log: 1 } },
         { id: 'pmi', name: 'Gestión Proyectos (PMI)', weights: { op: 3, fin: 1 } },
-        { id: 'sap_mm', name: 'SAP MM/SD', weights: { op: 3 } },
-        { id: 'logistica', name: 'Logística Internacional', weights: { op: 3 } },
-        { id: 'six_sigma', name: 'Lean Six Sigma', weights: { op: 3 } }
+        { id: 'sap_mm', name: 'SAP MM/SD', weights: { op: 3, log: 3 } }, // Importante para logística
+        { id: 'logistica', name: 'Logística Internacional', weights: { op: 2, log: 3 } },
+        { id: 'six_sigma', name: 'Lean Six Sigma', weights: { op: 3, log: 2 } }
     ];
 
     let approved = new Set();
@@ -1172,7 +1218,7 @@
         // Iniciar constructor
         initBuilder(); 
     }
-    function showPage(id) {
+    window.showPage = function(id) {
         // 1. Ocultar todas las secciones y desactivar botones
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -1181,18 +1227,19 @@
         const page = document.getElementById('page-'+id);
         if(page) page.classList.add('active');
         
-        // 3. Activar el botón correcto
+        // 3. Activar el botón correcto en el menú
+        // El número debe coincidir con el orden en que pusiste los botones en el HTML
         const map = {
-            'config': 0,
-            'estrategia': 1,
-            'malla': 2,
-            'progreso': 3,
-            'analitica': 4,
-            'calculadora': 5,
-            'skills': 6,
-            'simulador': 7,
-            'kanban': 8,
-            'recursos': 9
+            'config': 0,      // 1. Mi Carrera
+            'estrategia': 1,  // 2. Estrategia IA
+            'malla': 2,       // 3. Malla
+            'progreso': 3,    // 4. Progreso
+            'analitica': 4,   // 5. Analítica
+            'calculadora': 5, // 6. Notas
+            'skills': 6,      // 7. Skills
+            'simulador': 7,   // 8. Simulador
+            'recursos': 8,    // 9. Recursos
+            'comunidad': 9    // 10. Comunidad (NUEVO)
         };
 
         if(map[id] !== undefined) {
@@ -1202,15 +1249,18 @@
             }
         }
 
-        // 4. Lógica específica de cada página (AQUÍ ESTÁ EL ARREGLO)
+        // 4. Lógica específica de carga para cada página
         if(id === 'simulador') {
-            initSchedule();            // <--- ESTA ES LA CLAVE: Rellena las horas de Inicio/Fin
-            updateScheduleDropdowns(); // Rellena los cursos disponibles
+            initSchedule();
+            updateScheduleDropdowns();
         }
         if(id === 'progreso') renderDashboard();
         if(id === 'analitica') renderAnalytics();
         if(id === 'estrategia') renderHellGrid(); 
-    }
+        
+        // --- NUEVO: Cargar las tarjetas de comunidad ---
+        if(id === 'comunidad') renderComunidad();
+    };
 
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
@@ -1605,13 +1655,27 @@
         calculateProfiles();
     }
     function calculateProfiles() {
-        const sc = {fin:0,mkt:0,rrhh:0,op:0}; const mx = {fin:0,mkt:0,rrhh:0,op:0};
+        // Agregamos 'log' a los contadores
+        const sc = {fin:0, mkt:0, rrhh:0, op:0, log:0}; 
+        const mx = {fin:0, mkt:0, rrhh:0, op:0, log:0};
+        
         skillsDB.forEach(s => {
-            ['fin','mkt','rrhh','op'].forEach(k => { if(s.weights[k]) { mx[k]+=s.weights[k]; if(acquiredSkills.has(s.id)) sc[k]+=s.weights[k]; }});
+            // Recorremos incluyendo 'log'
+            ['fin','mkt','rrhh','op','log'].forEach(k => { 
+                if(s.weights[k]) { 
+                    mx[k]+=s.weights[k]; 
+                    if(acquiredSkills.has(s.id)) sc[k]+=s.weights[k]; 
+                }
+            });
         });
-        ['fin','mkt','rrhh','op'].forEach(k => {
-            const p = mx[k]===0?0:Math.round((sc[k]/mx[k])*100);
-            document.getElementById(`pct-${k}`).innerText = `${p}%`; document.getElementById(`bar-${k}`).style.width = `${p}%`;
+
+        // Actualizamos las barras incluyendo 'log'
+        ['fin','mkt','rrhh','op','log'].forEach(k => {
+            const p = mx[k]===0 ? 0 : Math.round((sc[k]/mx[k])*100);
+            const elPct = document.getElementById(`pct-${k}`);
+            const elBar = document.getElementById(`bar-${k}`);
+            if(elPct) elPct.innerText = `${p}%`;
+            if(elBar) elBar.style.width = `${p}%`;
         });
     }
 
@@ -2056,45 +2120,62 @@
         sendMessage(); 
     }
 
-    // ================= GESTIÓN DE MALLAS =================
+ // ================= GESTIÓN DE MALLAS (CORREGIDO) =================
 
-    function restoreAdminMalla() {
-        if(confirm("¿Volver a la malla de Administración? Se borrará tu progreso actual.")) {
-            localStorage.removeItem('lumin_custom_malla'); // Borra la personalizada
-            localStorage.removeItem('unmsm_adm_v11_c'); // Borra aprobados
-            localStorage.removeItem('unmsm_adm_v11_g'); // Borra notas
+    // --- 1. RESTAURAR ADMINISTRACIÓN ---
+    window.restoreAdminMalla = function() {
+        if(confirm("¿Seguro que quieres borrar tu malla personalizada y volver a la oficial de Administración?")) {
+            localStorage.removeItem('lumin_custom_malla');
+            localStorage.removeItem('lumin_custom_areas');
+            // Limpiamos notas para evitar conflictos de IDs
+            localStorage.removeItem('unmsm_adm_v11_c');
+            localStorage.removeItem('unmsm_adm_v11_g');
             location.reload();
         }
-    }
+    };
 
-    function importCustomMalla() {
+    // --- 2. IMPORTAR JSON ---
+    window.importCustomMalla = function() {
         try {
             const jsonText = document.getElementById('json-import-area').value;
+            if(!jsonText.trim()) return alert("La caja está vacía. Pega el código JSON primero.");
+
             const newCourses = JSON.parse(jsonText);
 
-            // Validación básica para que no rompan la página
-            if(!Array.isArray(newCourses) || !newCourses[0].id || !newCourses[0].name || !newCourses[0].c) {
-                return alert("Error: El código no tiene el formato de malla correcto.");
+            // Validación simple para asegurar que es una malla válida
+            if(!Array.isArray(newCourses) || newCourses.length === 0 || !newCourses[0].name) {
+                return alert("El código no parece válido o está incompleto.");
             }
 
-            if(confirm("⚠️ Al cargar una nueva carrera, se reiniciarán tus notas y progreso. ¿Continuar?")) {
+            if(confirm(`Se cargará una malla con ${newCourses.length} cursos. Tus notas actuales se reiniciarán. ¿Continuar?`)) {
                 localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
-                // Reseteamos progreso para evitar conflictos con cursos viejos
+                
+                // Reiniciar progreso para evitar errores
                 localStorage.removeItem('unmsm_adm_v11_c');
                 localStorage.removeItem('unmsm_adm_v11_g');
+                
+                alert("¡Malla importada con éxito!");
                 location.reload();
             }
         } catch (e) {
-            alert("Error: El texto pegado no es un JSON válido.");
+            alert("Error de formato JSON: " + e.message);
         }
-    }
+    };
 
-    function exportCurrentMalla() {
-        const json = JSON.stringify(courses);
-        navigator.clipboard.writeText(json).then(() => {
-            alert("¡Código copiado! Envíaselo a tus amigos.");
-        });
-    }
+    // --- 3. COPIAR JSON GENERADO (NUEVO) ---
+    window.copyExportJson = function() {
+        const text = document.getElementById('json-export-area');
+        text.select();
+        text.setSelectionRange(0, 99999); /* Para móviles */
+        
+        // Intentar copiar al portapapeles
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text.value).then(() => alert("¡Código copiado! Pásaselo a tu amigo."));
+        } else {
+            document.execCommand('copy'); // Método antiguo por si acaso
+            alert("¡Código copiado!");
+        }
+    };
 
     // ==========================================
     // 5. CONSTRUCTOR VISUAL DE MALLAS (BUILDER)
@@ -2235,21 +2316,36 @@
             });
         }
 
-        if(newCourses.length === 0) return alert("La malla está vacía.");
+        if(newCourses.length === 0) return alert("La malla está vacía. Agrega al menos un curso.");
 
-        if(confirm("¿Guardar esta nueva carrera? Se reiniciarán tus notas actuales.")) {
+        // CAMBIO: Lógica para mostrar el cuadro de compartir
+        if(confirm("¿Guardar y aplicar esta malla en tu perfil?")) {
+            // 1. Guardar en memoria
             courses = newCourses;
             localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
             localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
 
-            // Reiniciar progreso
+            // 2. Limpiar progreso anterior
             approved = new Set();
             approvedGrades = {};
             localStorage.removeItem('unmsm_adm_v11_c');
             localStorage.removeItem('unmsm_adm_v11_g');
             
-            alert("¡Carrera creada con éxito!");
-            location.reload();
+            // 3. MOSTRAR EL PANEL DE COMPARTIR (Nuevo)
+            const sharePanel = document.getElementById('share-panel');
+            const exportArea = document.getElementById('json-export-area');
+            
+            if(sharePanel && exportArea) {
+                sharePanel.style.display = 'block';
+                exportArea.value = JSON.stringify(courses);
+                // Scroll hacia el panel para que lo vean
+                sharePanel.scrollIntoView({behavior: "smooth"});
+            }
+            
+            alert("¡Malla Guardada! Abajo tienes el código para compartirla.");
+            
+            // Recargar la página después de unos segundos para que se aplique visualmente todo
+            setTimeout(() => location.reload(), 6000); 
         }
     };
 
@@ -2270,7 +2366,91 @@
         // Crear 10 ciclos por defecto
         for(let i=0; i<10; i++) window.addBuilderCycle();
     };
+// ================= COMUNIDAD (REPOSITORIO) =================
 
+    // 1. Base de datos simulada (Aquí podrías agregar más carreras)
+    const REPO_DB = [
+        {
+            uni: "UNMSM",
+            career: "Contabilidad",
+            icon: "account_balance",
+            color: "#f1c40f",
+            data: [
+                {id:'C1', name:'Contabilidad General I', cr:4, c:1, t:'O', req:[], tags:[]},
+                {id:'C2', name:'Matemática Financiera', cr:4, c:1, t:'O', req:[], tags:[]},
+                {id:'C3', name:'Documentación Mercantil', cr:3, c:1, t:'O', req:[], tags:[]},
+                {id:'C4', name:'Contabilidad General II', cr:4, c:2, t:'O', req:['C1'], tags:[]}
+            ]
+        },
+        {
+            uni: "UNI",
+            career: "Ingeniería de Sistemas",
+            icon: "computer",
+            color: "#3498db",
+            data: [
+                {id:'S1', name:'Introducción a la Programación', cr:3, c:1, t:'O', req:[], tags:[]},
+                {id:'S2', name:'Cálculo Diferencial', cr:4, c:1, t:'O', req:[], tags:[]},
+                {id:'S3', name:'Física I', cr:4, c:1, t:'O', req:[], tags:[]},
+                {id:'S4', name:'Estructura de Datos', cr:4, c:2, t:'O', req:['S1'], tags:[]}
+            ]
+        },
+        {
+            uni: "PUCP",
+            career: "Derecho",
+            icon: "gavel",
+            color: "#e74c3c",
+            data: [
+                {id:'D1', name:'Introducción a las Ciencias Jurídicas', cr:4, c:1, t:'O', req:[], tags:[]},
+                {id:'D2', name:'Historia del Derecho', cr:3, c:1, t:'O', req:[], tags:[]},
+                {id:'D3', name:'Derecho Romano', cr:3, c:2, t:'O', req:['D2'], tags:[]}
+            ]
+        }
+    ];
+
+    // 2. Función para dibujar las tarjetas
+    window.renderComunidad = function() {
+        const container = document.getElementById('repo-container');
+        if(!container) return;
+        container.innerHTML = '';
+
+        REPO_DB.forEach((item, idx) => {
+            const card = document.createElement('div');
+            card.className = 'repo-card';
+            
+            // Usamos colores suaves para el header
+            card.innerHTML = `
+                <div class="repo-header" style="background:${item.color}15; color:${item.color}">
+                    <span class="material-icons">${item.icon}</span>
+                </div>
+                <div class="repo-body">
+                    <div class="repo-uni">${item.uni}</div>
+                    <div class="repo-career">${item.career}</div>
+                    <div class="repo-stats">
+                        <span><span class="material-icons" style="font-size:12px; vertical-align:middle">menu_book</span> ${item.data.length} Cursos</span>
+                    </div>
+                    <button class="btn-load-repo" onclick="loadRepoMalla(${idx})">Cargar Malla</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    };
+
+    // 3. Función para cargar una malla del repositorio
+    window.loadRepoMalla = function(index) {
+        const selected = REPO_DB[index];
+        if(confirm(`⚠️ ¿Cargar la carrera de ${selected.career} (${selected.uni})? \n\nSe borrará tu progreso actual y se reemplazará tu malla.`)) {
+            // Guardamos la nueva malla
+            localStorage.setItem('lumin_custom_malla', JSON.stringify(selected.data));
+            
+            // Reseteamos áreas y notas para evitar conflictos
+            localStorage.removeItem('lumin_custom_areas');
+            localStorage.removeItem('unmsm_adm_v11_c');
+            localStorage.removeItem('unmsm_adm_v11_g');
+            
+            alert(`¡Bienvenido a ${selected.career}!`);
+            location.reload(); // Recargamos para aplicar cambios
+        }
+    };
     // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
     // ==========================================
