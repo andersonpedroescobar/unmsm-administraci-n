@@ -389,18 +389,35 @@
         </div>
     </div>
 
-    <!-- PÁGINA 4: SKILLS DASHBOARD -->
+    <!-- PÁGINA 4: SKILLS DASHBOARD (CORREGIDO) -->
     <div id="page-skills" class="page-section">
         <h2 style="text-align:center; margin-bottom:20px;">Perfil Profesional (Skills)</h2>
         <div class="profile-dashboard">
-            <!-- Dentro de <div class="profile-dashboard"> -->
+            <!-- Finanzas -->
+            <div class="profile-card">
+                <div class="profile-title" style="color:var(--c-fin)"><span class="material-icons">attach_money</span> Finanzas</div>
+                <div class="profile-percent" id="pct-fin">0%</div>
+                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-fin" style="background:var(--c-fin)"></div></div>
+            </div>
+            <!-- Marketing -->
+            <div class="profile-card">
+                <div class="profile-title" style="color:var(--c-mkt)"><span class="material-icons">campaign</span> Marketing</div>
+                <div class="profile-percent" id="pct-mkt">0%</div>
+                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-mkt" style="background:var(--c-mkt)"></div></div>
+            </div>
+            <!-- RRHH -->
+            <div class="profile-card">
+                <div class="profile-title" style="color:var(--c-rrhh)"><span class="material-icons">groups</span> RRHH</div>
+                <div class="profile-percent" id="pct-rrhh">0%</div>
+                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-rrhh" style="background:var(--c-rrhh)"></div></div>
+            </div>
+            <!-- Ops -->
             <div class="profile-card">
                 <div class="profile-title" style="color:var(--c-op)"><span class="material-icons">settings</span> Gestión/Ops</div>
                 <div class="profile-percent" id="pct-op">0%</div>
                 <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-op" style="background:var(--c-op)"></div></div>
             </div>
-            
-            <!-- NUEVO: LOGÍSTICA -->
+            <!-- Logística (Nueva) -->
             <div class="profile-card">
                 <div class="profile-title" style="color:#795548"><span class="material-icons">local_shipping</span> Logística</div>
                 <div class="profile-percent" id="pct-log">0%</div>
@@ -844,7 +861,7 @@
     // ================= FIN CÓDIGO FIREBASE =================
 
     // ================= DATA =================
-    // 1. MALLA BASE (ADMINISTRACIÓN) - Se usa si no hay otra cargada
+    // 1. MALLA BASE (ADMINISTRACIÓN)
     const ADMIN_MALLA = [
         // CICLO 1
         {id:'EGO1O1', name:'Lenguaje', cr:4, c:1, t:'O', req:[], tags:[]},
@@ -955,20 +972,21 @@
         {id:'ADO23102', name:'Gerencia General y Alta Dir.', cr:3, c:10, t:'O', req:['ADO23902'], tags:['op']},
         {id:'ADO23103', name:'Gestión de PYMES', cr:3, c:10, t:'O', req:[], tags:['op']}
     ];
+
     // =========================================================
-    // 2. LÓGICA DE CARGA DE DATOS (ESTO ES LO QUE FALTA)
+    // 2. LÓGICA DE CARGA DE DATOS (CORREGIDO)
     // =========================================================
     let courses = []; 
 
-    // Verificamos si hay una malla personalizada guardada
-    if (localStorage.getItem('lumin_custom_malla')) {
-        try {
-            courses = JSON.parse(localStorage.getItem('lumin_custom_malla'));
-        } catch (e) {
-            console.error("Error cargando malla personalizada", e);
-            courses = []; // Si falla, array vacío para evitar crash
+    try {
+        const stored = localStorage.getItem('lumin_custom_malla');
+        if (stored && stored !== "undefined" && stored !== "[]") {
+            courses = JSON.parse(stored);
         }
-    } 
+    } catch (e) {
+        console.error("Error cargando malla personalizada", e);
+        courses = [];
+    }
     
     // Si no hay personalizada o quedó vacía, usamos la OFICIAL
     if (!courses || courses.length === 0) {
@@ -976,13 +994,10 @@
     }
 
     // =========================================================
-    //  ⬇️ LOGICA DE ÁREAS Y ESPECIALIDADES (CORREGIDO) ⬇️
+    // 3. LOGICA DE ÁREAS Y ESPECIALIDADES
     // =========================================================
-
-    // Variable global para las áreas
     let customAreas = []; 
 
-    // 1. Inicializar (Cargar o Default)
     function initCustomAreas() {
         const stored = localStorage.getItem('lumin_custom_areas');
         if(stored) {
@@ -999,12 +1014,10 @@
         renderCustomAreas();
     }
     
-    // 2. Renderizar los "chips" de colores (Visualización)
     function renderCustomAreas() {
-        const div = document.getElementById('areas-list'); // Panel Configuración
-        const div2 = document.getElementById('custom-areas-list'); // Panel Builder
+        const div = document.getElementById('areas-list'); 
+        const div2 = document.getElementById('custom-areas-list'); 
         
-        // Función interna para dibujar
         const draw = (container) => {
             if(!container) return;
             container.innerHTML = '';
@@ -1020,15 +1033,12 @@
         draw(div2);
     }
 
-    // 3. NUEVA FUNCIÓN: Refrescar los selectores dentro de las tarjetas ya creadas
     window.updateAllBuilderAreaDropdowns = function() {
-        // Generar el HTML de las opciones actualizado
         let areaOptions = '<option value="">-- Sin Área --</option>';
         customAreas.forEach(a => {
             areaOptions += `<option value="${a.id}" style="color:${a.color}">★ ${a.name}</option>`;
         });
 
-        // Buscar todos los selectores de área y actualizarlos manteniendo la selección
         document.querySelectorAll('.b-area').forEach(select => {
             const currentVal = select.value; 
             select.innerHTML = areaOptions;  
@@ -1036,35 +1046,26 @@
         });
     };
 
-    // 4. Función del Botón "Crear"
     window.addNewArea = function() {
         const nameInput = document.getElementById('new-area-name');
         const colorInput = document.getElementById('new-area-color');
         
         if(!nameInput) return;
-        
         const name = nameInput.value.trim();
         const color = colorInput.value;
         
         if(!name) return alert("Por favor escribe un nombre para el área.");
         
-        // Crear un ID simple
         const id = name.toLowerCase().substring(0, 4) + Math.floor(Math.random()*100);
         
         customAreas.push({ id, name, color });
         localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
         
-        nameInput.value = ''; // Limpiar input
-        renderCustomAreas();  // Actualizar chips visuales
-        
-        // ACTUALIZACIÓN EN TIEMPO REAL DE LAS TARJETAS
+        nameInput.value = ''; 
+        renderCustomAreas();  
         updateAllBuilderAreaDropdowns();
-        
-        // También actualizamos los requisitos por si acaso
-        if(typeof updateAllBuilderDropdowns === 'function') updateAllBuilderDropdowns();
     };
 
-    // 5. Función del Botón "Restaurar Default"
     window.resetAreas = function() {
         if(confirm("¿Restaurar las áreas por defecto de Administración?")) {
             localStorage.removeItem('lumin_custom_areas');
@@ -1073,22 +1074,16 @@
         }
     };
 
-    // 6. Función para eliminar un área
     window.removeCustomArea = function(idx) {
         if(confirm("¿Eliminar esta área?")) {
             customAreas.splice(idx, 1);
             localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
             renderCustomAreas();
-            
-            // ACTUALIZACIÓN EN TIEMPO REAL DE LAS TARJETAS
             updateAllBuilderAreaDropdowns();
         }
     };
 
-    // =========================================================
-    //  ⬆️ FIN LOGICA DE ÁREAS ⬆️
-    // =========================================================
-
+    // 4. DATABASE DE SKILLS
     const skillsDB = [
         { id: 'excel_adv', name: 'Excel Avanzado (Macros)', weights: { fin: 3, op: 3, mkt: 2, rrhh: 2, log: 3 } },
         { id: 'power_bi', name: 'Power BI / Tableau', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2, log: 3 } },
@@ -1124,7 +1119,7 @@
         { id: 'planeamiento', name: 'Planeamiento Estratégico', weights: { op: 3, fin: 1, mkt: 1, rrhh: 1 } },
         { id: 'gestion_pub', name: 'Gestión Pública (SIAF)', weights: { op: 3, log: 1 } },
         { id: 'pmi', name: 'Gestión Proyectos (PMI)', weights: { op: 3, fin: 1 } },
-        { id: 'sap_mm', name: 'SAP MM/SD', weights: { op: 3, log: 3 } }, // Importante para logística
+        { id: 'sap_mm', name: 'SAP MM/SD', weights: { op: 3, log: 3 } },
         { id: 'logistica', name: 'Logística Internacional', weights: { op: 2, log: 3 } },
         { id: 'six_sigma', name: 'Lean Six Sigma', weights: { op: 3, log: 2 } }
     ];
