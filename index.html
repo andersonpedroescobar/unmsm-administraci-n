@@ -2501,23 +2501,38 @@
     window.sendMessage = sendMessage;
     window.handleChatEnter = handleChatEnter;
     window.askAI = askAI;
-    window.restoreAdminMalla = restoreAdminMalla;
-    window.importCustomMalla = importCustomMalla;
-    window.exportCurrentMalla = exportCurrentMalla;
     
+    // Gestión de Mallas
     window.restoreAdminMalla = restoreAdminMalla;
     window.importCustomMalla = importCustomMalla;
-    window.exportCurrentMalla = exportCurrentMalla;
+    window.copyExportJson = copyExportJson; // Agregué esta que faltaba exportar
+    // window.exportCurrentMalla = exportCurrentMalla; <--- ESTA LINEA ERA EL ERROR (BORRADA)
 
+    // Builder
     window.initBuilder = initBuilder;
     window.addBuilderCycle = addBuilderCycle;
     window.addBuilderCourse = addBuilderCourse;
     window.saveBuilderMalla = saveBuilderMalla;
     window.updateAllBuilderDropdowns = updateAllBuilderDropdowns;
+    
+    // Comunidad
+    window.loadRepoMalla = loadRepoMalla;
+    window.renderComunidad = renderComunidad;
+
+    // Gestión de Áreas (Agregué estas por si acaso las necesitas en los botones HTML)
+    window.addNewArea = addNewArea;
+    window.resetAreas = resetAreas;
+    window.removeCustomArea = removeCustomArea;
+
     // -----------------------------------------------
 
     // Iniciar la app
-    init();
+    // Aseguramos que el DOM esté listo antes de iniciar
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 </script>
 </body>
 </html>
