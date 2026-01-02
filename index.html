@@ -955,15 +955,23 @@
         {id:'ADO23102', name:'Gerencia General y Alta Dir.', cr:3, c:10, t:'O', req:['ADO23902'], tags:['op']},
         {id:'ADO23103', name:'Gestión de PYMES', cr:3, c:10, t:'O', req:[], tags:['op']}
     ];
-    // 2. VARIABLE DINÁMICA (Esta es la que usará el sistema)
+    // =========================================================
+    // 2. LÓGICA DE CARGA DE DATOS (ESTO ES LO QUE FALTA)
+    // =========================================================
     let courses = []; 
 
-    // Al iniciar, decidimos qué malla usar
+    // Verificamos si hay una malla personalizada guardada
     if (localStorage.getItem('lumin_custom_malla')) {
-        // Si el alumno cargó otra carrera (ej: Sistemas), usamos esa
-        courses = JSON.parse(localStorage.getItem('lumin_custom_malla'));
-    } else {
-        // Si es nuevo o es de Admin, usamos la base
+        try {
+            courses = JSON.parse(localStorage.getItem('lumin_custom_malla'));
+        } catch (e) {
+            console.error("Error cargando malla personalizada", e);
+            courses = []; // Si falla, array vacío para evitar crash
+        }
+    } 
+    
+    // Si no hay personalizada o quedó vacía, usamos la OFICIAL
+    if (!courses || courses.length === 0) {
         courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
     }
 
@@ -1271,20 +1279,38 @@
     function renderMalla() {
         const grid = document.getElementById('malla-grid');
         grid.innerHTML = '';
-        for(let i=1; i<=10; i++) {
+
+        // 1. Calcular cuántos ciclos tiene esta carrera
+        let maxCycle = 10; // Mínimo 10 para que se vea bien
+        if(courses.length > 0) {
+            // Buscamos el número de ciclo más alto en los cursos
+            const maxInCourses = Math.max(...courses.map(c => c.c));
+            maxCycle = Math.max(10, maxInCourses); 
+        }
+
+        // 2. Dibujar las columnas necesarias
+        for(let i=1; i<=maxCycle; i++) {
             const col = document.createElement('div');
             col.className = 'cycle-col';
             col.innerHTML = `<div class="cycle-title">Ciclo ${i}</div>`;
-            courses.filter(c => c.c === i).forEach(c => {
+            
+            // Buscar cursos de este ciclo
+            const cycleCourses = courses.filter(c => c.c === i);
+            
+            // Si el ciclo es mayor a 10 y no tiene cursos, no lo dibujamos (para que no quede infinito)
+            if(i > 10 && cycleCourses.length === 0) continue;
+
+            cycleCourses.forEach(c => {
                 const card = document.createElement('div');
                 card.className = `course-card type-${c.t}`;
                 card.id = c.id;
                 
                 const passed = approved.has(c.id);
-                const reqMet = c.req.every(r => approved.has(r));
+                // Verificamos requisitos (si no tiene requisitos, es true)
+                const reqMet = c.req ? c.req.every(r => approved.has(r)) : true;
 
                 if(passed) card.classList.add('completed');
-                else if(!reqMet) { card.classList.add('locked'); card.title = "Falta requisito: " + c.req.join(', '); }
+                else if(!reqMet) { card.classList.add('locked'); card.title = "Falta requisito"; }
 
                 let gradeHtml = '';
                 if(passed && approvedGrades[c.id]) {
@@ -1293,10 +1319,12 @@
 
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#666">
-                        <strong>${c.id}</strong> <span>${c.cr} Cr.</span>
+                        <strong>${c.id.substring(0,8)}</strong> <span>${c.cr} Cr.</span>
                     </div>
                     <b>${c.name}</b>
-                    <div style="font-size:0.75rem; color:#999; margin-top:5px; text-align:right">${c.t==='O'?'Obligatorio':'Electivo'}</div>
+                    <div style="font-size:0.75rem; color:#999; margin-top:5px; text-align:right">
+                        ${c.t === 'O' ? 'Obligatorio' : 'Electivo'}
+                    </div>
                     ${gradeHtml}
                 `;
                 card.onclick = () => toggleCourse(c, reqMet);
@@ -1381,11 +1409,17 @@
         if(elPPSDash) elPPSDash.innerText = pps;
     }
 
-    function resetMalla() {
-        if(confirm("¿Borrar todo el progreso?")) {
-            localStorage.clear(); location.reload();
+    window.resetMalla = function() {
+        if(confirm("⚠️ ¿Estás seguro? Se borrará TODO tu progreso y volverás a la malla original de Administración.")) {
+            // Borramos todo rastro de personalización
+            localStorage.clear(); 
+            // Opcional: Si quieres mantener el tema oscuro, guárdalo antes
+            // const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            // localStorage.setItem('theme', theme);
+            
+            location.reload();
         }
-    }
+    };
 
     // ================= DASHBOARD & PDF =================
     function renderDashboard() {
