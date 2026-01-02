@@ -157,6 +157,31 @@
             .scheduler-container, .dashboard-container, .calc-wrapper, .analytics-grid { grid-template-columns: 1fr; flex-direction: column; }
             .scheduler-grid-wrapper { min-width: 100%; }
         }
+
+        /* --- MEJORAS VISUALES CORREGIDAS --- */
+
+        /* Centrar los gráficos canvas dentro de las tarjetas */
+        .chart-card canvas {
+            margin: 0 auto; 
+            display: block;
+        }
+
+        /* Arreglo de contraste en Modo Oscuro para Analítica */
+        body.dark-mode .chart-card {
+            color: #e0e0e0; /* Texto claro */
+        }
+        body.dark-mode .chart-card h3 {
+    color: var(--accent); /* Títulos en color acento */
+        }
+        body.dark-mode .chart-card small {
+            color: #aaa; /* Subtítulos legibles */
+        }
+
+        /* Arreglo para que los inputs del simulador se vean bien en modo oscuro/claro */
+        .form-select option {
+            background: var(--bg-card);
+            color: var(--text-main);
+        }
     </style>
 </head>
 <body>
@@ -973,36 +998,37 @@
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         
         // 2. Mostrar la sección seleccionada
-        document.getElementById('page-'+id).classList.add('active');
+        const page = document.getElementById('page-'+id);
+        if(page) page.classList.add('active');
         
-        // 3. Activar el botón correcto (CORREGIDO EL ORDEN)
-        
+        // 3. Activar el botón correcto
         const map = {
-            'config': 0,      // El botón nuevo (Mi Carrera)
-            'estrategia': 1,  // Se mueve al 1
-            'malla': 2,       // Se mueve al 2
-            'progreso': 3,    // ... y así sucesivamente
+            'config': 0,
+            'estrategia': 1,
+            'malla': 2,
+            'progreso': 3,
             'analitica': 4,
             'calculadora': 5,
             'skills': 6,
             'simulador': 7,
-            'kanban': 8,      // El botón de Chamba (Página 8)
-            'recursos': 9     // Recursos queda al final
+            'kanban': 8,
+            'recursos': 9
         };
 
         if(map[id] !== undefined) {
-            // Usamos .nav-menu .nav-btn para ser más específicos
             const buttons = document.querySelectorAll('.nav-menu .nav-btn');
             if(buttons[map[id]]) {
                 buttons[map[id]].classList.add('active');
             }
         }
 
-        // 4. Lógica específica de cada página
-        if(id === 'simulador') updateScheduleDropdowns();
+        // 4. Lógica específica de cada página (AQUÍ ESTÁ EL ARREGLO)
+        if(id === 'simulador') {
+            initSchedule();            // <--- ESTA ES LA CLAVE: Rellena las horas de Inicio/Fin
+            updateScheduleDropdowns(); // Rellena los cursos disponibles
+        }
         if(id === 'progreso') renderDashboard();
         if(id === 'analitica') renderAnalytics();
-        // Si entramos a estrategia, aseguramos que el grid se vea bien
         if(id === 'estrategia') renderHellGrid(); 
     }
 
@@ -1051,28 +1077,46 @@
     }
 
     function toggleCourse(c, reqMet) {
+        // Lógica para desmarcar
         if(approved.has(c.id)) {
             const dep = courses.find(x => x.req.includes(c.id) && approved.has(x.id));
-            if(dep) return alert(`No puedes desmarcar ${c.name}, bloquea a ${dep.name}`);
+            if(dep) return alert(`⚠️ No puedes desmarcar ${c.name} porque es requisito de ${dep.name}. Desmarca ese primero.`);
+            
             approved.delete(c.id);
             delete approvedGrades[c.id];
+        
+        // Lógica para marcar como aprobado
         } else {
-            if(!reqMet) return;
-            // Ask for grade
+            if(!reqMet) return alert("🔒 Aún no cumples los requisitos para este curso.");
+            
             let grade = prompt(`Ingrese nota final para ${c.name} (Opcional, Enter para omitir):`, "14");
             if(grade !== null) {
                 approved.add(c.id);
+                
+                // ARREGLO PPS: Asegurar que sea número entero
                 if(grade.trim() !== "" && !isNaN(grade)) {
-                    approvedGrades[c.id] = parseInt(grade);
+                    approvedGrades[c.id] = parseInt(grade, 10); // Base 10 explícita
+                }
+
+                // NUEVO: NOTIFICACIÓN DE DESBLOQUEO
+                // Buscamos qué cursos tienen como requisito el curso actual (c.id)
+                const unlockedCourses = courses.filter(course => course.req.includes(c.id));
+                if(unlockedCourses.length > 0) {
+                    const names = unlockedCourses.map(u => u.name).join(' y ');
+                    // Usamos un alert simple o podrías usar una librería de notificaciones
+                    setTimeout(() => alert(`🎉 ¡Felicidades! Has desbloqueado: ${names}`), 100);
                 }
             } else {
-                return; // Cancelled
+                return; // Cancelar si el usuario da "Cancelar"
             }
         }
+        
+        // Guardado y actualización inmediata
         localStorage.setItem('unmsm_adm_v11_c', JSON.stringify([...approved]));
         localStorage.setItem('unmsm_adm_v11_g', JSON.stringify(approvedGrades));
+        
         renderMalla();
-        updateStats();
+        updateStats(); // Forzar recálculo del PPS
     }
 
     function updateStats() {
@@ -1083,17 +1127,28 @@
         courses.forEach(c => { 
             if(approved.has(c.id)) {
                 cr += c.cr;
-                if(approvedGrades[c.id]) {
-                    weightedSum += approvedGrades[c.id] * c.cr;
-                    creditsWithGrade += c.cr;
+                // Verificamos que exista nota y que sea un número válido
+                if(approvedGrades[c.id] !== undefined && approvedGrades[c.id] !== null) {
+                    const nota = parseFloat(approvedGrades[c.id]);
+                    if(!isNaN(nota)) {
+                        weightedSum += nota * c.cr;
+                        creditsWithGrade += c.cr;
+                    }
                 }
             } 
         });
         
+        // Cálculo seguro
         const pps = creditsWithGrade > 0 ? (weightedSum / creditsWithGrade).toFixed(2) : "0.00";
-        document.getElementById('credits-display').innerText = cr;
-        document.getElementById('pps-display').innerText = pps;
-        document.getElementById('pps-dashboard').innerText = pps;
+        
+        // Actualizar DOM
+        const elCredits = document.getElementById('credits-display');
+        const elPPS = document.getElementById('pps-display');
+        const elPPSDash = document.getElementById('pps-dashboard');
+
+        if(elCredits) elCredits.innerText = cr;
+        if(elPPS) elPPS.innerText = pps;
+        if(elPPSDash) elPPSDash.innerText = pps;
     }
 
     function resetMalla() {
@@ -1335,13 +1390,31 @@
         e.value = 10; renderScheduleGrid(); renderScheduleItems();
     }
     function updateScheduleDropdowns() {
-        const sel = document.getElementById('sched-course'); sel.innerHTML = '';
-        const avail = courses.filter(c => !approved.has(c.id) && c.req.every(r => approved.has(r)));
-        if(avail.length===0) sel.innerHTML='<option disabled>No hay cursos disponibles</option>';
-        else avail.forEach(c => {
-            const added = mySchedule.some(s=>s.courseId===c.id);
-            sel.innerHTML += `<option value="${c.id}">${added?'✅ ':''}${c.name} (${c.cr} Cr.)</option>`;
-        });
+        const sel = document.getElementById('sched-course'); 
+        sel.innerHTML = '';
+        
+        // Filtro corregido:
+        // 1. Que NO esté aprobado
+        // 2. Y (Que no tenga requisitos O Que todos sus requisitos estén aprobados)
+        const avail = courses.filter(c => 
+            !approved.has(c.id) && 
+            (c.req.length === 0 || c.req.every(r => approved.has(r)))
+        );
+
+        if(avail.length === 0) {
+            sel.innerHTML = '<option disabled selected>No hay cursos disponibles (Revisa requisitos)</option>';
+        } else {
+            // Ordenar alfabéticamente para facilitar la búsqueda
+            avail.sort((a, b) => a.name.localeCompare(b.name));
+            
+            avail.forEach(c => {
+                const added = mySchedule.some(s => s.courseId === c.id);
+                // Si ya está en el horario, lo marcamos visualmente pero permitimos seleccionarlo por si quiere ver detalles
+                sel.innerHTML += `<option value="${c.id}" ${added ? 'disabled' : ''}>
+                    ${added ? '✅ ' : ''}${c.name} (Ciclo ${c.c})
+                </option>`;
+            });
+        }
     }
     function renderScheduleGrid() {
         const grid = document.getElementById('schedule-grid');
@@ -1652,26 +1725,21 @@
         }
         // -----------------------------------------------------
 
-        // 3. Prompt Maestro Actualizado
+        // 3. Prompt Maestro Actualizado (Más flexible)
         const systemPrompt = `
-            Actúa como un Asesor Académico Experto de Administración UNMSM.
+            Actúa como un Asesor Académico Experto de Administración UNMSM y Mentor Profesional.
             
-            INFORMACIÓN OFICIAL DE LA MALLA CURRICULAR (Plan 2023):
-            ${mallaResumen}
-
-            DATOS DEL ALUMNO:
-            - Créditos Aprobados: ${ctx.creditos}
-            - PPS: ${ctx.promedio}
-            - Horario Actual: ${ctx.horario || "No matriculado"}
-            - Exámenes Próximos: ${ctx.examenes || "Ninguno"}
-
-            PREGUNTA: "${text}"
+            CONTEXTO DEL ALUMNO:
+            - Malla Curricular (Resumen): ${mallaResumen}
+            - Créditos: ${ctx.creditos} | Promedio: ${ctx.promedio}
+            - Horario: ${ctx.horario}
 
             INSTRUCCIONES:
-            - Responde basándote EXCLUSIVAMENTE en la "Malla Curricular" provista arriba. No inventes cursos.
-            - Si preguntan qué cursos tocan en el siguiente ciclo, revisa sus créditos y dile los del ciclo correspondiente.
-            - Usa negritas <b></b> para los nombres de cursos.
-            - Sé breve y estratégico.
+            1. Si la pregunta es sobre la carrera, cursos o requisitos, BASATE en la Malla Curricular provista.
+            2. Si la pregunta es GENERAL (ej: "¿Qué es el EBITDA?", "Consejos para entrevista", "Cómo redactar un correo"), responde usando tu conocimiento general experto.
+            3. Sé motivador, breve y estratégico. Usa negritas <b></b> para resaltar conceptos clave.
+            
+            PREGUNTA DEL ALUMNO: "${text}"
         `;
 
         try {
