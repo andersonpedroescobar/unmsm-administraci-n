@@ -249,13 +249,53 @@
             <button class="nav-btn" onclick="showPage('skills')"><span class="material-icons">psychology</span> Skills</button>
             <button class="nav-btn" onclick="showPage('simulador')"><span class="material-icons">schedule</span> Simulador</button>
             <button class="nav-btn" onclick="showPage('recursos')"><span class="material-icons">link</span> Recursos</button>
-            <button class="icon-btn" onclick="toggleTheme()" title="Modo Oscuro"><span class="material-icons">dark_mode</span></button>
+
             <!-- NUEVO BOTÓN COMUNIDAD -->
             <button class="nav-btn" onclick="showPage('comunidad')"><span class="material-icons">public</span> Comunidad</button>
+            
+            <button class="nav-btn" onclick="showPage('subirjson')"><span class="material-icons">upload_file</span> Cargar Datos</button>
             
             <button class="icon-btn" onclick="toggleTheme()" title="Modo Oscuro"><span class="material-icons">dark_mode</span></button>
         </div>
     </nav>
+
+    <!-- ========================================== -->
+<!-- NUEVA PÁGINA: SUBIR JSON -->
+<!-- ========================================== -->
+    <div id="page-subirjson" class="page-section">
+    <div style="max-width: 600px; margin: 40px auto; text-align: center;">
+        <h2><span class="material-icons" style="font-size: 2rem; vertical-align: middle; color: var(--primary);">cloud_upload</span> Cargar Respaldo Académico</h2>
+        <p style="color: #666; margin-bottom: 30px;">Sube tu archivo .json para restaurar tu malla, notas y avance.</p>
+
+        <!-- Zona de Carga con Estilo -->
+        <div class="upload-area" id="drop-area" style="background: var(--bg-card); padding: 50px; border: 3px dashed var(--border); border-radius: 15px; transition: all 0.3s;">
+            <span class="material-icons" style="font-size: 4rem; color: #ccc;">description</span>
+            <h3 style="margin: 10px 0;">Arrastra tu archivo JSON aquí</h3>
+            <p style="font-size: 0.9rem; color: #888; margin-bottom: 20px;">o haz clic para buscar en tu computadora</p>
+            
+            <input type="file" id="json-file-input" accept=".json" style="display: none;" onchange="handleFileSelect(this)">
+            
+            <button onclick="document.getElementById('json-file-input').click()" 
+                    style="background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                Seleccionar Archivo
+            </button>
+        </div>
+
+        <!-- Previsualización de Datos (Oculto al inicio) -->
+        <div id="upload-preview" style="display: none; margin-top: 30px; background: var(--bg-card); padding: 20px; border-radius: 10px; border-left: 5px solid var(--accent); text-align: left;">
+            <h4 style="margin: 0 0 10px 0;">Archivo detectado: <span id="file-name-display" style="font-weight: normal;"></span></h4>
+            <p style="font-size: 0.9rem;">Se encontraron <b id="course-count-display">0</b> cursos en el archivo.</p>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="confirmUpload()" style="flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                    ✅ Confirmar y Cargar
+                </button>
+                <button onclick="cancelUpload()" style="background: #c0392b; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
 
     <!-- PÁGINA 1: MALLA -->
     <div id="page-malla" class="page-section active">
@@ -1275,18 +1315,18 @@
         if(page) page.classList.add('active');
         
         // 3. Activar el botón correcto en el menú
-        // El número debe coincidir con el orden en que pusiste los botones en el HTML
         const map = {
-            'config': 0,      // 1. Mi Carrera
-            'estrategia': 1,  // 2. Estrategia IA
-            'malla': 2,       // 3. Malla
-            'progreso': 3,    // 4. Progreso
-            'analitica': 4,   // 5. Analítica
-            'calculadora': 5, // 6. Notas
-            'skills': 6,      // 7. Skills
-            'simulador': 7,   // 8. Simulador
-            'recursos': 8,    // 9. Recursos
-            'comunidad': 9    // 10. Comunidad (NUEVO)
+            'config': 0,       // Mi Carrera
+            'estrategia': 1,   // Estrategia IA
+            'malla': 2,        // Malla
+            'progreso': 3,     // Progreso
+            'analitica': 4,    // Analítica
+            'calculadora': 5,  // Notas
+            'skills': 6,       // Skills
+            'simulador': 7,    // Simulador
+            'recursos': 8,     // Recursos
+            'comunidad': 9,    // Comunidad
+            'subirjson': 10    // <--- Cargar Datos (Es el número 11, pero empezamos en 0)
         };
 
         if(map[id] !== undefined) {
@@ -2688,6 +2728,70 @@
     }
 
     // ==========================================
+    // LÓGICA DE LA PESTAÑA 'CARGAR DATOS'
+    // ==========================================
+    let tempJsonData = null; // Variable temporal para no borrar nada por accidente
+
+    // 1. Cuando seleccionas el archivo
+    window.handleFileSelect = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const json = JSON.parse(e.target.result);
+                
+                // Validación: ¿Es una lista de cursos?
+                if (!Array.isArray(json)) {
+                    alert("Error: El archivo seleccionado no tiene el formato correcto de una Malla (debe ser una lista []).");
+                    return;
+                }
+
+                // Todo bien: Guardamos temporalmente y mostramos la previsualización
+                tempJsonData = json;
+                
+                document.getElementById('upload-preview').style.display = 'block';
+                document.getElementById('file-name-display').innerText = file.name; // Muestra nombre del archivo
+                document.getElementById('course-count-display').innerText = json.length; // Muestra cantidad de cursos
+                document.getElementById('drop-area').style.display = 'none'; // Oculta la caja grande
+
+            } catch (error) {
+                alert("Error crítico: El archivo no es un JSON válido o está dañado.");
+                console.error(error);
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    // 2. Cuando das click en "Confirmar"
+    window.confirmUpload = function() {
+        if (!tempJsonData) return;
+
+        // Advertencia de seguridad
+        if (confirm("⚠️ ¿Estás seguro? \n\nSe reemplazará tu malla actual con la del archivo y se reiniciarán tus notas para evitar errores de compatibilidad.")) {
+            
+            // A. Guardamos la nueva malla
+            localStorage.setItem('lumin_custom_malla', JSON.stringify(tempJsonData));
+            
+            // B. Borramos notas antiguas y cursos marcados (para empezar limpio con la nueva malla)
+            localStorage.removeItem('unmsm_adm_v11_c');
+            localStorage.removeItem('unmsm_adm_v11_g');
+            
+            alert("¡Carga exitosa! La página se reiniciará ahora.");
+            location.reload();
+        }
+    };
+
+    // 3. Cuando das click en "Cancelar"
+    window.cancelUpload = function() {
+        tempJsonData = null;
+        document.getElementById('upload-preview').style.display = 'none'; // Ocultar preview
+        document.getElementById('drop-area').style.display = 'block';     // Mostrar caja grande
+        document.getElementById('json-file-input').value = "";            // Limpiar input
+    };
+
+    // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
     // ==========================================
     window.showPage = showPage;
@@ -2735,6 +2839,9 @@
 
     window.deleteCloudMalla = deleteCloudMalla;
     // -----------------------------------------------
+    window.handleFileSelect = handleFileSelect;
+    window.confirmUpload = confirmUpload;
+    window.cancelUpload = cancelUpload;
 
     // Iniciar la app
     // Aseguramos que el DOM esté listo antes de iniciar
