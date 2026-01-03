@@ -481,10 +481,17 @@
                     </select>
                 </div>
 
-                <!-- 4. HORAS (SE MANTIENE IGUAL) -->
+                <!-- 4. HORAS (MODIFICADO: CON MINUTOS) -->
                 <div class="form-group" style="display:flex; gap:10px;">
-                    <div style="flex:1"><label class="form-label">Inicio:</label><select id="sched-start" class="form-select"></select></div>
-                    <div style="flex:1"><label class="form-label">Fin:</label><select id="sched-end" class="form-select"></select></div>
+                    <div style="flex:1">
+                        <label class="form-label">Inicio:</label>
+                        <!-- type="time" crea el selector de reloj -->
+                        <input type="time" id="sched-start" class="form-select" value="08:00">
+                    </div>
+                    <div style="flex:1">
+                        <label class="form-label">Fin:</label>
+                        <input type="time" id="sched-end" class="form-select" value="10:00">
+                    </div>
                 </div>
 
                 <!-- 5. CRÉDITOS Y BOTONES (SE MANTIENE IGUAL) -->
@@ -790,8 +797,8 @@
     // 1. IMPORTAR FIREBASE (AUTH Y FIRESTORE)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    // --- ESTA ES LA LÍNEA NUEVA QUE NECESITAMOS AGREGAR: ---
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"; 
+    // BUSCA LA LÍNEA DE FIRESTORE:
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // 2. TU LISTA BLANCA (Mantenemos tus correos)
     const ALLOWED_EMAILS = [
@@ -1762,12 +1769,114 @@
         });
     }
 
-    // ================= SIMULADOR & EXPORTAR ICS =================
+    // ================= SIMULADOR CON MINUTOS (NUEVO) =================
+
+    // 1. Función auxiliar: Convierte "12:30" a 12.5 para poder calcular
+    function timeToFloat(timeStr) {
+        if(!timeStr) return 0;
+        const [h, m] = timeStr.split(':').map(Number);
+        return h + (m / 60);
+    }
+
+    // 2. Nueva versión de INIT (Ya no llena selects, solo dibuja la tabla)
     function initSchedule() {
-        const s = document.getElementById('sched-start'); const e = document.getElementById('sched-end');
-        s.innerHTML = ''; e.innerHTML = '';
-        for(let i=7; i<=22; i++) { let t = (i<10?'0':'')+i+':00'; s.innerHTML+=`<option value="${i}">${t}</option>`; if(i>7) e.innerHTML+=`<option value="${i}">${t}</option>`; }
-        e.value = 10; renderScheduleGrid(); renderScheduleItems();
+        renderScheduleGrid(); 
+        renderScheduleItems();
+    }
+
+    // 3. Nueva versión de AGREGAR (Maneja minutos)
+    window.addToSchedule = function() {
+        const id = document.getElementById('sched-course').value;
+        const d = parseInt(document.getElementById('sched-day').value);
+        
+        // Obtenemos los valores del nuevo input tipo reloj
+        const sVal = document.getElementById('sched-start').value;
+        const eVal = document.getElementById('sched-end').value;
+
+        if(!id) return alert("Selecciona un curso primero.");
+        if(!sVal || !eVal) return alert("Define horas válidas.");
+
+        // Convertimos a decimales (Ej: 12:30 -> 12.5)
+        const s = timeToFloat(sVal);
+        const e = timeToFloat(eVal);
+        
+        if(s >= e) return alert("La hora de inicio debe ser menor a la de fin.");
+        
+        // Verificamos cruce de horarios (Matemática precisa con decimales)
+        const conflict = mySchedule.some(x => x.day === d && (
+            (s >= x.start && s < x.end) || 
+            (e > x.start && e <= x.end) || 
+            (s <= x.start && e >= x.end) ||
+            (x.start >= s && x.end <= e)
+        ));
+
+        if(conflict) {
+            return alert("⛔ CRUCE DETECTADO: Ya tienes un curso en ese horario.");
+        }
+        
+        // Color
+        const exist = mySchedule.find(x => x.courseId === id);
+        const color = exist ? exist.color : ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4dd0e1','#4db6ac','#81c784','#ffb74d'][Math.floor(Math.random()*10)];
+        
+        // Guardamos
+        mySchedule.push({courseId: id, day: d, start: s, end: e, color: color});
+        localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule));
+        
+        renderScheduleItems(); 
+        updateScheduleDropdowns();
+    };
+
+    // 4. Nueva versión de DIBUJAR (Calcula la posición exacta en pixeles)
+    function renderScheduleItems() {
+        document.querySelectorAll('.course-block').forEach(b => b.remove());
+        
+        // Calcular créditos
+        let total = 0; let unique = new Set();
+        mySchedule.forEach(i => unique.add(i.courseId));
+        unique.forEach(id => { const c = courses.find(x => x.id===id); if(c) total+=c.cr; });
+        document.getElementById('sim-credits').innerText = total;
+
+        const CELL_HEIGHT = 50; // Altura de cada celda en px (según tu CSS)
+
+        mySchedule.forEach((item, idx) => {
+            const c = courses.find(x => x.id === item.courseId);
+            
+            // En qué celda base (hora entera) debe empezar. Ej: 12.5 -> Celda de las 12
+            const baseHour = Math.floor(item.start);
+            
+            // Cuánto bajar dentro de esa celda (minutos). Ej: 0.5 * 50px = 25px
+            const topOffset = (item.start - baseHour) * CELL_HEIGHT;
+            
+            // Altura total de la caja
+            const duration = item.end - item.start;
+            const height = (duration * CELL_HEIGHT) - 2; // -2 para que se vea el borde
+
+            // Buscamos la celda de la hora base
+            const cell = document.querySelector(`.grid-cell[data-day="${item.day}"][data-hour="${baseHour}"]`);
+            
+            if(cell) {
+                const b = document.createElement('div'); 
+                b.className = 'course-block';
+                // Aplicamos estilos precisos
+                b.style.top = `${topOffset}px`; 
+                b.style.height = `${height}px`; 
+                b.style.background = item.color;
+                
+                // Formato de hora bonito para mostrar (12:30 - 14:00)
+                const formatTime = (floatTime) => {
+                    const h = Math.floor(floatTime);
+                    const m = Math.round((floatTime - h) * 60);
+                    return `${h}:${m < 10 ? '0'+m : m}`;
+                };
+
+                b.innerHTML = `
+                    <div class="remove-course" onclick="removeFromSchedule(${idx})">×</div>
+                    <strong>${c?c.name:item.courseId}</strong>
+                    <div style="font-size:0.7rem; line-height:1;">${formatTime(item.start)} - ${formatTime(item.end)}</div>
+                `;
+                cell.appendChild(b);
+            }
+        });
     }
     window.updateScheduleDropdowns = function() {
         const sel = document.getElementById('sched-course');
@@ -1821,58 +1930,8 @@
             for(let d=1; d<=6; d++) { const c = document.createElement('div'); c.className='grid-cell'; c.dataset.day=d; c.dataset.hour=h; grid.appendChild(c); }
         }
     }
-    function renderScheduleItems() {
-        document.querySelectorAll('.course-block').forEach(b => b.remove());
-        let total = 0; let unique = new Set();
-        mySchedule.forEach(i => unique.add(i.courseId));
-        unique.forEach(id => { const c = courses.find(x => x.id===id); if(c) total+=c.cr; });
-        document.getElementById('sim-credits').innerText = total;
-
-        mySchedule.forEach((item, idx) => {
-            const c = courses.find(x => x.id === item.courseId);
-            const cell = document.querySelector(`.grid-cell[data-day="${item.day}"][data-hour="${item.start}"]`);
-            if(cell) {
-                const b = document.createElement('div'); b.className = 'course-block';
-                b.style.height = `${(item.end-item.start)*51 - 2}px`; b.style.background = item.color;
-                b.innerHTML = `<div class="remove-course" onclick="removeFromSchedule(${idx})">×</div><strong>${c?c.name:item.courseId}</strong><small>${item.start}:00-${item.end}:00</small>`;
-                cell.appendChild(b);
-            }
-        });
-    }
     
-    // Función ESTRICTA para agregar al horario
-    window.addToSchedule = function() {
-        const id = document.getElementById('sched-course').value;
-        const d = parseInt(document.getElementById('sched-day').value);
-        const s = parseInt(document.getElementById('sched-start').value);
-        const e = parseInt(document.getElementById('sched-end').value);
-        
-        if(!id) return alert("Selecciona un curso primero.");
-        if(s >= e) return alert("La hora de inicio debe ser menor a la de fin.");
-        
-        // 1. Verificamos cruce de horarios
-        const conflict = mySchedule.some(x => x.day === d && (
-            (s >= x.start && s < x.end) || 
-            (e > x.start && e <= x.end) || 
-            (s <= x.start && e >= x.end)
-        ));
-
-        // BLOQUEO TOTAL
-        if(conflict) {
-            return alert("⛔ CRUCE DETECTADO: Ya tienes un curso en ese horario. No se puede agregar.");
-        }
-        
-        // 2. Buscamos si el curso ya existe para usar el mismo color
-        const exist = mySchedule.find(x => x.courseId === id);
-        const color = exist ? exist.color : ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4dd0e1','#4db6ac','#81c784','#ffb74d'][Math.floor(Math.random()*10)];
-        
-        // 3. Guardamos
-        mySchedule.push({courseId: id, day: d, start: s, end: e, color: color});
-        localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule));
-        
-        renderScheduleItems(); 
-        updateScheduleDropdowns();
-    };
+    
     function removeFromSchedule(i) { mySchedule.splice(i,1); localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule)); renderScheduleItems(); updateScheduleDropdowns(); }
     function clearSchedule() { if(confirm("¿Borrar?")) { mySchedule=[]; localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule)); renderScheduleItems(); updateScheduleDropdowns(); } }
     
@@ -2447,15 +2506,26 @@
     // ==========================================
 
     // 1. Función para mostrar la interfaz de Comunidad
+    // ==========================================
+    // ADMINISTRACIÓN DE COMUNIDAD (NUEVO)
+    // ==========================================
+    
+    // 1. LISTA DE ADMINS (Correos autorizados para borrar)
+    const ADMIN_EMAILS = [
+        "andersonpedroescobar292@gmail.com",
+        "dianapinarez@gmail.com"
+    ];
+
+    // 2. FUNCIÓN DE RENDERIZADO (Con botón de borrar para admins)
     window.renderComunidad = async function() {
         const container = document.getElementById('repo-container');
         if(!container) return;
         
-        // Header con botón de subir
+        // Header HTML (Se mantiene igual)
         container.innerHTML = `
             <div style="grid-column: 1/-1; background: var(--bg-card); padding:20px; border-radius:12px; margin-bottom:20px; border-left: 5px solid var(--accent); box-shadow:0 2px 10px rgba(0,0,0,0.1);">
                 <h3>☁️ Repositorio Académico Compartido</h3>
-                <p>Sube tu malla actual para compartirla con otros estudiantes de diferentes universidades.</p>
+                <p>Sube tu malla actual para compartirla con otros estudiantes.</p>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <input type="text" id="upload-uni" placeholder="Universidad (Ej: UNMSM)" class="form-select" style="max-width:200px;">
                     <input type="text" id="upload-career" placeholder="Carrera (Ej: Ing. Sistemas)" class="form-select" style="max-width:250px;">
@@ -2466,44 +2536,55 @@
         `;
 
         try {
-            // Descargar datos de Firebase
             const q = query(collection(db, "mallas"), orderBy("date", "desc"));
             const querySnapshot = await getDocs(q);
             
-            const loader = document.getElementById('mallas-loader');
-            if(loader) loader.style.display = 'none';
+            document.getElementById('mallas-loader').style.display = 'none';
 
-            // Agrupar por Universidad
+            // --- DETECCIÓN DE ADMIN ---
+            // Verificamos si hay un usuario logueado y si su correo está en la lista
+            const currentUser = auth.currentUser;
+            const userEmail = currentUser ? currentUser.email.toLowerCase() : "";
+            const isAdmin = ADMIN_EMAILS.includes(userEmail);
+            // --------------------------
+
             const grouped = {};
             
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                data.id = docSnap.id; // ¡IMPORTANTE! Guardamos el ID para poder borrar
+                
                 const uni = (data.uni || "Otros").toUpperCase();
                 if(!grouped[uni]) grouped[uni] = [];
                 grouped[uni].push(data);
             });
 
-            // Si no hay nada
             if(Object.keys(grouped).length === 0) {
-                container.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#777;">Aún no hay mallas subidas. ¡Sé el primero!</div>`;
+                container.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#777;">Aún no hay mallas subidas.</div>`;
                 return;
             }
 
-            // Renderizar Carpetas por Universidad
             Object.keys(grouped).sort().forEach(uni => {
-                // Título Universidad
                 const section = document.createElement('div');
                 section.style.gridColumn = "1 / -1";
                 section.innerHTML = `<h3 style="border-bottom:2px solid #ccc; padding-bottom:5px; margin-top:20px; color:var(--text-main);"><span class="material-icons" style="vertical-align:bottom">school</span> ${uni}</h3>`;
                 container.appendChild(section);
 
-                // Tarjetas de Carreras
                 grouped[uni].forEach(malla => {
                     const card = document.createElement('div');
                     card.className = 'repo-card';
-                    // Generar un color aleatorio o fijo basado en la carrera
                     const color = malla.uni === 'UNMSM' ? '#8a0303' : (malla.uni === 'UNI' ? '#d35400' : '#2980b9');
                     
+                    // --- BOTÓN DE BORRAR (Solo visible para ti y tu compañera) ---
+                    let deleteBtn = '';
+                    if(isAdmin) {
+                        deleteBtn = `
+                        <button onclick="deleteCloudMalla('${malla.id}')" style="background:#c0392b; color:white; border:none; padding:8px; cursor:pointer; width:100%; font-weight:bold; margin-top:5px; border-radius:4px; display:flex; align-items:center; justify-content:center; gap:5px;">
+                            <span class="material-icons" style="font-size:14px">delete</span> BORRAR (ADMIN)
+                        </button>`;
+                    }
+                    // ------------------------------------------------------------
+
                     card.innerHTML = `
                         <div class="repo-header" style="background:${color}15; color:${color}; height:80px; font-size:2.5rem;">
                             <span class="material-icons">folder_shared</span>
@@ -2513,11 +2594,12 @@
                             <div class="repo-career">${malla.career}</div>
                             <div class="repo-stats">
                                 <span>📅 ${new Date(malla.date.seconds * 1000).toLocaleDateString()}</span>
-                                <span>📚 ${JSON.parse(malla.coursesJson).length} Cursos</span>
+                                <span style="font-size:0.7rem; color:#aaa;">${malla.author ? 'Autor: ' + malla.author.split('@')[0] : ''}</span>
                             </div>
                             <button class="btn-load-repo" onclick='loadCloudMalla(${JSON.stringify(malla.coursesJson)}, "${malla.areasJson ? "YES" : "NO"}", ${JSON.stringify(malla.areasJson || "[]")})'>
                                 Cargar Malla
                             </button>
+                            ${deleteBtn}
                         </div>
                     `;
                     container.appendChild(card);
@@ -2526,7 +2608,24 @@
 
         } catch (e) {
             console.error("Error cargando mallas: ", e);
-            document.getElementById('mallas-loader').innerText = "Error cargando la comunidad (Revisa tu conexión o permisos).";
+            document.getElementById('mallas-loader').innerText = "Error cargando. " + e.message;
+        }
+    };
+
+    // 3. NUEVA FUNCIÓN PARA EJECUTAR EL BORRADO
+    window.deleteCloudMalla = async function(docId) {
+        if(confirm("⚠️ MODO ADMINISTRADOR:\n\n¿Estás seguro de ELIMINAR PERMANENTEMENTE esta malla de la base de datos?\nEsta acción no se puede deshacer.")) {
+            try {
+                // Borramos usando el ID del documento
+                await deleteDoc(doc(db, "mallas", docId));
+                alert("🗑️ Malla eliminada correctamente.");
+                
+                // Recargamos la lista para ver que desapareció
+                renderComunidad(); 
+            } catch (e) {
+                alert("Error al eliminar: " + e.message);
+                console.error(e);
+            }
         }
     };
 
@@ -2634,7 +2733,7 @@
     window.resetAreas = resetAreas;
     window.removeCustomArea = removeCustomArea;
 
-
+    window.deleteCloudMalla = deleteCloudMalla;
     // -----------------------------------------------
 
     // Iniciar la app
