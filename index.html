@@ -987,21 +987,35 @@
     ];
 
     // =========================================================
-    // 2. LÓGICA DE CARGA DE DATOS (CORREGIDO Y SEGURO)
+    // 2. LÓGICA DE CARGA DE DATOS (CORREGIDO Y ROBUSTO)
     // =========================================================
     let courses = []; 
+
+    // Función auxiliar para validar si un array de cursos es válido
+    function isValidMalla(data) {
+        return Array.isArray(data) && data.length > 0 && data[0].hasOwnProperty('id');
+    }
 
     function loadInitialData() {
         try {
             const stored = localStorage.getItem('lumin_custom_malla');
-            if (stored && stored !== "undefined" && stored !== "[]" && stored !== "null") {
-                courses = JSON.parse(stored);
+            
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                // Validamos que lo que recuperamos no sea basura
+                if (isValidMalla(parsed)) {
+                    courses = parsed;
+                } else {
+                    console.warn("Malla guardada corrupta, cargando Admin.");
+                    courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
+                }
             } else {
-                console.log("No hay malla personalizada, cargando Admin por defecto.");
+                // Si no hay nada guardado, cargamos la malla por defecto
+                console.log("Iniciando con Malla Admin por defecto.");
                 courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
             }
         } catch (e) {
-            console.error("Error crítico cargando malla:", e);
+            console.error("Error crítico cargando datos:", e);
             // Fallback de emergencia
             courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
         }
@@ -2264,49 +2278,77 @@
         sendMessage(); 
     }
 
- // ================= GESTIÓN DE MALLAS (CORREGIDO) =================
+ 
+    // ================= GESTIÓN DE MALLAS (CORREGIDO Y SIN RECARGAR) =================
 
     // --- 1. RESTAURAR ADMINISTRACIÓN ---
     window.restoreAdminMalla = function() {
         if(confirm("¿Seguro que quieres borrar tu malla personalizada y volver a la oficial de Administración?")) {
+            // 1. Borrar datos del storage
             localStorage.removeItem('lumin_custom_malla');
             localStorage.removeItem('lumin_custom_areas');
-            // Limpiamos notas para evitar conflictos de IDs
             localStorage.removeItem('unmsm_adm_v11_c');
             localStorage.removeItem('unmsm_adm_v11_g');
-            location.reload();
+
+            // 2. Cargar datos por defecto en memoria
+            courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
+            
+            // 3. Restaurar áreas por defecto
+            initCustomAreas(); 
+
+            // 4. Limpiar variables de progreso
+            approved = new Set();
+            approvedGrades = {};
+
+            // 5. Redibujar todo inmediatamente
+            renderMalla();
+            renderSkills();
+            updateStats();
+            renderAnalytics();
+            
+            alert("✅ Malla de Administración restaurada correctamente.");
         }
     };
 
-    // --- 2. IMPORTAR JSON ---
+    // --- 2. IMPORTAR JSON (CARGA MANUAL) ---
     window.importCustomMalla = function() {
         try {
             const jsonText = document.getElementById('json-import-area').value;
-            if(!jsonText.trim()) return alert("La caja está vacía. Pega el código JSON primero.");
+            if(!jsonText.trim()) return alert("La caja está vacía.");
 
             const newCourses = JSON.parse(jsonText);
 
-            // Validación simple para asegurar que es una malla válida
-            if(!Array.isArray(newCourses) || newCourses.length === 0 || !newCourses[0].name) {
-                return alert("El código no parece válido o está incompleto.");
+            // Usamos la validación que creamos en el paso 1
+            if(typeof isValidMalla !== 'undefined' && !isValidMalla(newCourses)) {
+                return alert("El código JSON no tiene el formato correcto.");
+            } else if (!Array.isArray(newCourses) || newCourses.length === 0) {
+                 return alert("El código JSON no es válido.");
             }
 
-            if(confirm(`Se cargará una malla con ${newCourses.length} cursos. Tus notas actuales se reiniciarán. ¿Continuar?`)) {
-                localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
+            if(confirm(`Se cargará una malla con ${newCourses.length} cursos. Se reiniciará tu progreso. ¿Continuar?`)) {
+                // Actualizar Memoria y Storage
+                courses = newCourses;
+                localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
                 
-                // Reiniciar progreso para evitar errores
+                // Reiniciar progreso
+                approved = new Set();
+                approvedGrades = {};
                 localStorage.removeItem('unmsm_adm_v11_c');
                 localStorage.removeItem('unmsm_adm_v11_g');
                 
+                // Redibujar
+                renderMalla();
+                updateStats();
+                renderAnalytics();
+                
                 alert("¡Malla importada con éxito!");
-                location.reload();
             }
         } catch (e) {
             alert("Error de formato JSON: " + e.message);
         }
     };
 
-    // --- 3. COPIAR JSON GENERADO (NUEVO) ---
+    // --- 3. COPIAR JSON GENERADO (ESTE SÍ SE QUEDA IGUAL) ---
     window.copyExportJson = function() {
         const text = document.getElementById('json-export-area');
         text.select();
@@ -2320,6 +2362,55 @@
             alert("¡Código copiado!");
         }
     };
+
+    // --- 4. CARGAR DESDE LA NUBE (COMUNIDAD - NUEVO SIN RELOAD) ---
+    window.loadCloudMalla = function(jsonCourses, hasAreas, jsonAreas) {
+        if(confirm("⚠️ ¿Cargar esta malla? Se reemplazará tu malla actual y tu progreso.")) {
+            try {
+                // 1. Procesar cursos
+                const newCourses = typeof jsonCourses === 'string' ? JSON.parse(jsonCourses) : jsonCourses;
+                
+                // Validación básica
+                if (!Array.isArray(newCourses) || newCourses.length === 0) {
+                    throw new Error("Datos de malla inválidos");
+                }
+
+                courses = newCourses;
+                localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
+                
+                // 2. Procesar áreas
+                if(hasAreas === "YES") {
+                    const newAreas = typeof jsonAreas === 'string' ? JSON.parse(jsonAreas) : jsonAreas;
+                    customAreas = newAreas;
+                    localStorage.setItem('lumin_custom_areas', JSON.stringify(newAreas));
+                } else {
+                    localStorage.removeItem('lumin_custom_areas');
+                    initCustomAreas(); // Recargar defaults si no trae áreas
+                }
+
+                // 3. Limpiar progreso
+                approved = new Set();
+                approvedGrades = {};
+                localStorage.removeItem('unmsm_adm_v11_c');
+                localStorage.removeItem('unmsm_adm_v11_g');
+
+                // 4. Redibujar todo
+                renderMalla();
+                renderCustomAreas();
+                updateStats();
+                renderAnalytics();
+
+                alert("✅ Malla cargada correctamente.");
+                // Forzamos ir a la pestaña malla para que vean el cambio
+                showPage('malla'); 
+
+            } catch(e) {
+                alert("Error procesando los datos de la malla: " + e.message);
+                console.error(e);
+            }
+        }
+    }
+
 
     // ==========================================
     // 5. CONSTRUCTOR VISUAL DE MALLAS (BUILDER)
@@ -2701,36 +2792,6 @@
         }
     };
 
-    // 3. Función para CARGAR una malla de la nube
-    window.loadCloudMalla = function(jsonCourses, hasAreas, jsonAreas) {
-        if(confirm("⚠️ ¿Cargar esta malla? Se reemplazará tu malla actual y tu progreso.")) {
-            try {
-                // Cargar Cursos
-                const newCourses = typeof jsonCourses === 'string' ? JSON.parse(jsonCourses) : jsonCourses;
-                localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
-                
-                // Cargar Áreas (Si existen en la nube)
-                if(hasAreas === "YES") {
-                    const newAreas = typeof jsonAreas === 'string' ? JSON.parse(jsonAreas) : jsonAreas;
-                    localStorage.setItem('lumin_custom_areas', JSON.stringify(newAreas));
-                } else {
-                    // Si es una malla vieja sin áreas, ponemos unas por defecto genéricas
-                    localStorage.removeItem('lumin_custom_areas');
-                }
-
-                // Limpiar progreso
-                localStorage.removeItem('unmsm_adm_v11_c');
-                localStorage.removeItem('unmsm_adm_v11_g');
-
-                alert("Malla cargada correctamente.");
-                location.reload();
-
-            } catch(e) {
-                alert("Error procesando los datos de la malla.");
-                console.error(e);
-            }
-        }
-    }
 
     // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
