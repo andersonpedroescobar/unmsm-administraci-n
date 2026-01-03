@@ -1098,13 +1098,13 @@
         { id: 'power_bi', name: 'Power BI / Tableau', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2, log: 3 } },
         { id: 'sql', name: 'SQL para Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 1, log: 2 } },
         { id: 'python', name: 'Python (Analítica)', weights: { fin: 3, op: 2, mkt: 2, rrhh: 1 } },
-        { id: 'ingles', name: 'Inglés de Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 } },
+        { id: 'ingles', name: 'Inglés de Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 , log: 1 } },
         { id: 'mat_fin', name: 'Matemática Financiera', weights: { fin: 3, op: 1 } },
         { id: 'estados_fin', name: 'Análisis Estados Fin.', weights: { fin: 3, op: 1 } },
         { id: 'bolsa', name: 'Bolsa de Valores', weights: { fin: 3 } },
         { id: 'econometria', name: 'Econometría', weights: { fin: 3, mkt: 1 } },
         { id: 'sap_fi', name: 'SAP FI/CO', weights: { fin: 3, op: 1 } },
-        { id: 'riesgos', name: 'Gestión de Riesgos', weights: { fin: 3, op: 2 } },
+        { id: 'riesgos', name: 'Gestión de Riesgos', weights: { fin: 3, op: 2 , log:2} },
         { id: 'bloomberg', name: 'Bloomberg Terminal', weights: { fin: 3 } },
         { id: 'fintech', name: 'Fintech & Blockchain', weights: { fin: 2, mkt: 1 } },
         { id: 'inv_merc', name: 'Investigación Mercados', weights: { mkt: 3, log: 1 } },
@@ -1124,7 +1124,7 @@
         { id: 'sst', name: 'Seguridad y Salud (SST)', weights: { rrhh: 3, op: 2 } },
         { id: 'people_analytics', name: 'People Analytics', weights: { rrhh: 3, op: 1 } },
         { id: 'supply', name: 'Supply Chain Mgmt', weights: { op: 3, log: 3 } },
-        { id: 'bpm', name: 'Procesos BPM (Bizagi)', weights: { op: 3 } },
+        { id: 'bpm', name: 'Procesos BPM (Bizagi)', weights: { op: 3, log: 2 } },
         { id: 'planeamiento', name: 'Planeamiento Estratégico', weights: { op: 3, fin: 1, mkt: 1, rrhh: 1 } },
         { id: 'gestion_pub', name: 'Gestión Pública (SIAF)', weights: { op: 3, log: 1 } },
         { id: 'pmi', name: 'Gestión Proyectos (PMI)', weights: { op: 3, fin: 1 } },
@@ -1442,14 +1442,31 @@
     }
 
     window.resetMalla = function() {
-        if(confirm("⚠️ ¿Estás seguro? Se borrará TODO tu progreso y volverás a la malla original de Administración.")) {
-            // Borramos todo rastro de personalización
-            localStorage.clear(); 
-            // Opcional: Si quieres mantener el tema oscuro, guárdalo antes
-            // const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-            // localStorage.setItem('theme', theme);
+        // Mensaje más claro para el usuario
+        if(confirm("⚠️ ¿Reiniciar tu progreso académico?\n\nSe desmarcarán todos los cursos aprobados y se borrarán las notas, pero TU MALLA PERSONALIZADA SE MANTENDRÁ intacta.")) {
             
-            location.reload();
+            // 1. Limpiamos las variables en memoria (RAM)
+            approved = new Set();
+            approvedGrades = {};
+
+            // 2. Borramos SOLO las llaves de progreso en el navegador (Disco)
+            localStorage.removeItem('unmsm_adm_v11_c'); // 'c' de Checked (Cursos)
+            localStorage.removeItem('unmsm_adm_v11_g'); // 'g' de Grades (Notas)
+
+            // IMPORTANTE: NO tocamos 'lumin_custom_malla' ni 'lumin_custom_areas'
+            // Tampoco borramos el horario ('unmsm_adm_v11_h') ni los skills manuales ('unmsm_adm_v11_s') 
+            // a menos que tú quieras que también se borren.
+
+            // 3. Actualizamos la visualización en tiempo real
+            renderMalla();      // Redibuja los cursos (ahora todos grises)
+            updateStats();      // Pone el PPS y créditos en 0
+            renderAnalytics();  // Actualiza los gráficos a vacío
+            
+            // Opcional: Actualizar perfil de skills (las barras bajarán porque dependen de los cursos)
+            calculateProfiles(); 
+
+            // Feedback visual
+            alert("✅ Progreso reiniciado. Puedes empezar a marcar de nuevo.");
         }
     };
 
