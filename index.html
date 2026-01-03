@@ -784,16 +784,19 @@
     </style>
 
 <script type="module">
-    // ================= SEGURIDAD FIREBASE (TUS CLAVES) =================
     
-    // 1. IMPORTAR FIREBASE DESDE LA NUBE (CDN)
+    // ================= SEGURIDAD FIREBASE + BASE DE DATOS =================
+    
+    // 1. IMPORTAR FIREBASE (AUTH Y FIRESTORE)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    // --- ESTA ES LA LÍNEA NUEVA QUE NECESITAMOS AGREGAR: ---
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"; 
 
-    // 2. TU LISTA BLANCA (MODIFICAR LOS CORREOS REALES)
+    // 2. TU LISTA BLANCA (Mantenemos tus correos)
     const ALLOWED_EMAILS = [
         "andersonpedroescobar292@gmail.com",
-        "dianapinarez@gmail.com" ,
+        "dianapinarez@gmail.com",
         "marcorojasrivera20@gmail.com",
         "20231490@lamolina.edu.pe"
     ];
@@ -809,10 +812,13 @@
         measurementId: "G-16KXE5N8ZD"
     };
 
-    // 4. INICIALIZAR
+    // 4. INICIALIZAR APP, AUTH Y BASE DE DATOS
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
+    
+    // --- ESTA ES LA OTRA LÍNEA NUEVA IMPORTANTE: ---
+    const db = getFirestore(app);
 
     // 5. FUNCIÓN DE LOGIN
     const loginBtn = document.getElementById('google-login-btn');
@@ -1003,13 +1009,16 @@
         if(stored) {
             customAreas = JSON.parse(stored);
         } else {
-            // Default Admin UNMSM
+            // COLORES BASADOS EN TUS IMÁGENES (Leyenda)
             customAreas = [
-                {id:'fin', name:'Finanzas', color:'#27ae60'},
-                {id:'mkt', name:'Marketing', color:'#e67e22'},
-                {id:'rrhh', name:'RRHH', color:'#8e44ad'},
-                {id:'op', name:'Proyectos', color:'#2980b9'}
+                {id:'rrhh', name:'Talento Humano', color:'#9b59b6'}, // Morado
+                {id:'fin', name:'Finanzas', color:'#8bc34a'},        // Verde Claro
+                {id:'op', name:'Proyectos', color:'#e57373'},        // Rojo/Salmón
+                {id:'mkt', name:'Marketing', color:'#42a5f5'},       // Azul
+                {id:'log', name:'Logística', color:'#ffb74d'}        // Naranja/Peach
             ];
+            // Guardamos esto inmediatamente para que se aplique
+            localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
         }
         renderCustomAreas();
     }
@@ -2338,8 +2347,7 @@
     // GUARDAR TODO
     window.saveBuilderMalla = function() {
         const newCourses = [];
-        let hasError = false;
-
+        
         for(let i=1; i<=builderCycleCount; i++) {
             const list = document.getElementById(`b-list-${i}`);
             if(!list) continue;
@@ -2348,61 +2356,53 @@
                 const name = card.querySelector('.b-name').value.trim();
                 const cr = parseInt(card.querySelector('.b-cr').value) || 3;
                 const type = card.querySelector('.b-type').value;
-                
-                // Leer Requisitos
                 const reqSelect = card.querySelector('.b-req');
-                let selectedReqs = Array.from(reqSelect.selectedOptions).map(opt => opt.value);
+                let selectedReqs = Array.from(reqSelect.selectedOptions).map(opt => opt.value).filter(r => r !== "");
                 
-                // CORRECCIÓN IMPORTANTE: Filtrar valores vacíos
-                // Esto elimina cualquier "" que se haya colado si seleccionaste "-- Sin Requisito --"
-                selectedReqs = selectedReqs.filter(r => r !== "" && r !== null);
-
-                // Leer Área
                 const areaSelect = card.querySelector('.b-area');
                 const areaVal = areaSelect ? areaSelect.value : "";
                 const tags = areaVal ? [areaVal] : [];
 
                 if(name) {
                     const id = name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) + '_' + i;
-                    newCourses.push({
-                        id: id, name: name, cr: cr, c: i, t: type,
-                        req: selectedReqs, // Ahora va limpio
-                        tags: tags         
-                    });
+                    newCourses.push({ id, name, cr, c: i, t: type, req: selectedReqs, tags });
                 }
             });
         }
 
-        if(newCourses.length === 0) return alert("La malla está vacía. Agrega al menos un curso.");
+        if(newCourses.length === 0) return alert("La malla está vacía. Agrega cursos.");
 
-        // CAMBIO: Lógica para mostrar el cuadro de compartir
-        if(confirm("¿Guardar y aplicar esta malla en tu perfil?")) {
+        if(confirm("¿Guardar y aplicar esta malla?")) {
             // 1. Guardar en memoria
             courses = newCourses;
             localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
             localStorage.setItem('lumin_custom_areas', JSON.stringify(customAreas));
 
-            // 2. Limpiar progreso anterior
+            // 2. Limpiar progreso anterior (Resetear notas)
             approved = new Set();
             approvedGrades = {};
             localStorage.removeItem('unmsm_adm_v11_c');
             localStorage.removeItem('unmsm_adm_v11_g');
             
-            // 3. MOSTRAR EL PANEL DE COMPARTIR (Nuevo)
+            // 3. MOSTRAR EL CÓDIGO (Y NO QUITARLO)
             const sharePanel = document.getElementById('share-panel');
             const exportArea = document.getElementById('json-export-area');
             
             if(sharePanel && exportArea) {
                 sharePanel.style.display = 'block';
                 exportArea.value = JSON.stringify(courses);
-                // Scroll hacia el panel para que lo vean
                 sharePanel.scrollIntoView({behavior: "smooth"});
             }
+
+            // 4. ACTUALIZAR LA INTERFAZ EN VIVO (Sin recargar la página)
+            alert("¡Malla Guardada y Aplicada! Copia el código de abajo cuando quieras.");
             
-            alert("¡Malla Guardada! Abajo tienes el código para compartirla.");
-            
-            // Recargar la página después de unos segundos para que se aplique visualmente todo
-            setTimeout(() => location.reload(), 6000); 
+            // Re-ejecutamos las funciones de renderizado
+            renderMalla();
+            renderSkills();
+            updateStats();
+            renderAnalytics(); 
+            // Si el usuario cambia de pestaña, ya verá la nueva malla.
         }
     };
 
@@ -2425,89 +2425,152 @@
     };
 // ================= COMUNIDAD (REPOSITORIO) =================
 
-    // 1. Base de datos simulada (Aquí podrías agregar más carreras)
-    const REPO_DB = [
-        {
-            uni: "UNMSM",
-            career: "Contabilidad",
-            icon: "account_balance",
-            color: "#f1c40f",
-            data: [
-                {id:'C1', name:'Contabilidad General I', cr:4, c:1, t:'O', req:[], tags:[]},
-                {id:'C2', name:'Matemática Financiera', cr:4, c:1, t:'O', req:[], tags:[]},
-                {id:'C3', name:'Documentación Mercantil', cr:3, c:1, t:'O', req:[], tags:[]},
-                {id:'C4', name:'Contabilidad General II', cr:4, c:2, t:'O', req:['C1'], tags:[]}
-            ]
-        },
-        {
-            uni: "UNI",
-            career: "Ingeniería de Sistemas",
-            icon: "computer",
-            color: "#3498db",
-            data: [
-                {id:'S1', name:'Introducción a la Programación', cr:3, c:1, t:'O', req:[], tags:[]},
-                {id:'S2', name:'Cálculo Diferencial', cr:4, c:1, t:'O', req:[], tags:[]},
-                {id:'S3', name:'Física I', cr:4, c:1, t:'O', req:[], tags:[]},
-                {id:'S4', name:'Estructura de Datos', cr:4, c:2, t:'O', req:['S1'], tags:[]}
-            ]
-        },
-        {
-            uni: "PUCP",
-            career: "Derecho",
-            icon: "gavel",
-            color: "#e74c3c",
-            data: [
-                {id:'D1', name:'Introducción a las Ciencias Jurídicas', cr:4, c:1, t:'O', req:[], tags:[]},
-                {id:'D2', name:'Historia del Derecho', cr:3, c:1, t:'O', req:[], tags:[]},
-                {id:'D3', name:'Derecho Romano', cr:3, c:2, t:'O', req:['D2'], tags:[]}
-            ]
-        }
-    ];
+    // ==========================================
+    // LÓGICA DE COMUNIDAD EN TIEMPO REAL (FIRESTORE)
+    // ==========================================
 
-    // 2. Función para dibujar las tarjetas
-    window.renderComunidad = function() {
+    // 1. Función para mostrar la interfaz de Comunidad
+    window.renderComunidad = async function() {
         const container = document.getElementById('repo-container');
         if(!container) return;
-        container.innerHTML = '';
-
-        REPO_DB.forEach((item, idx) => {
-            const card = document.createElement('div');
-            card.className = 'repo-card';
-            
-            // Usamos colores suaves para el header
-            card.innerHTML = `
-                <div class="repo-header" style="background:${item.color}15; color:${item.color}">
-                    <span class="material-icons">${item.icon}</span>
+        
+        // Header con botón de subir
+        container.innerHTML = `
+            <div style="grid-column: 1/-1; background: var(--bg-card); padding:20px; border-radius:12px; margin-bottom:20px; border-left: 5px solid var(--accent); box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+                <h3>☁️ Repositorio Académico Compartido</h3>
+                <p>Sube tu malla actual para compartirla con otros estudiantes de diferentes universidades.</p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <input type="text" id="upload-uni" placeholder="Universidad (Ej: UNMSM)" class="form-select" style="max-width:200px;">
+                    <input type="text" id="upload-career" placeholder="Carrera (Ej: Ing. Sistemas)" class="form-select" style="max-width:250px;">
+                    <button class="btn-calc-action" onclick="uploadCurrentMalla()">📤 Publicar mi Malla Actual</button>
                 </div>
-                <div class="repo-body">
-                    <div class="repo-uni">${item.uni}</div>
-                    <div class="repo-career">${item.career}</div>
-                    <div class="repo-stats">
-                        <span><span class="material-icons" style="font-size:12px; vertical-align:middle">menu_book</span> ${item.data.length} Cursos</span>
-                    </div>
-                    <button class="btn-load-repo" onclick="loadRepoMalla(${idx})">Cargar Malla</button>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    };
+            </div>
+            <div id="mallas-loader" style="grid-column: 1/-1; text-align:center; padding:20px;">Cargando mallas de la nube...</div>
+        `;
 
-    // 3. Función para cargar una malla del repositorio
-    window.loadRepoMalla = function(index) {
-        const selected = REPO_DB[index];
-        if(confirm(`⚠️ ¿Cargar la carrera de ${selected.career} (${selected.uni})? \n\nSe borrará tu progreso actual y se reemplazará tu malla.`)) {
-            // Guardamos la nueva malla
-            localStorage.setItem('lumin_custom_malla', JSON.stringify(selected.data));
+        try {
+            // Descargar datos de Firebase
+            const q = query(collection(db, "mallas"), orderBy("date", "desc"));
+            const querySnapshot = await getDocs(q);
             
-            // Reseteamos áreas y notas para evitar conflictos
-            localStorage.removeItem('lumin_custom_areas');
-            localStorage.removeItem('unmsm_adm_v11_c');
-            localStorage.removeItem('unmsm_adm_v11_g');
+            const loader = document.getElementById('mallas-loader');
+            if(loader) loader.style.display = 'none';
+
+            // Agrupar por Universidad
+            const grouped = {};
             
-            alert(`¡Bienvenido a ${selected.career}!`);
-            location.reload(); // Recargamos para aplicar cambios
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const uni = (data.uni || "Otros").toUpperCase();
+                if(!grouped[uni]) grouped[uni] = [];
+                grouped[uni].push(data);
+            });
+
+            // Si no hay nada
+            if(Object.keys(grouped).length === 0) {
+                container.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#777;">Aún no hay mallas subidas. ¡Sé el primero!</div>`;
+                return;
+            }
+
+            // Renderizar Carpetas por Universidad
+            Object.keys(grouped).sort().forEach(uni => {
+                // Título Universidad
+                const section = document.createElement('div');
+                section.style.gridColumn = "1 / -1";
+                section.innerHTML = `<h3 style="border-bottom:2px solid #ccc; padding-bottom:5px; margin-top:20px; color:var(--text-main);"><span class="material-icons" style="vertical-align:bottom">school</span> ${uni}</h3>`;
+                container.appendChild(section);
+
+                // Tarjetas de Carreras
+                grouped[uni].forEach(malla => {
+                    const card = document.createElement('div');
+                    card.className = 'repo-card';
+                    // Generar un color aleatorio o fijo basado en la carrera
+                    const color = malla.uni === 'UNMSM' ? '#8a0303' : (malla.uni === 'UNI' ? '#d35400' : '#2980b9');
+                    
+                    card.innerHTML = `
+                        <div class="repo-header" style="background:${color}15; color:${color}; height:80px; font-size:2.5rem;">
+                            <span class="material-icons">folder_shared</span>
+                        </div>
+                        <div class="repo-body">
+                            <div class="repo-uni" style="color:${color}">${malla.uni}</div>
+                            <div class="repo-career">${malla.career}</div>
+                            <div class="repo-stats">
+                                <span>📅 ${new Date(malla.date.seconds * 1000).toLocaleDateString()}</span>
+                                <span>📚 ${JSON.parse(malla.coursesJson).length} Cursos</span>
+                            </div>
+                            <button class="btn-load-repo" onclick='loadCloudMalla(${JSON.stringify(malla.coursesJson)}, "${malla.areasJson ? "YES" : "NO"}", ${JSON.stringify(malla.areasJson || "[]")})'>
+                                Cargar Malla
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+
+        } catch (e) {
+            console.error("Error cargando mallas: ", e);
+            document.getElementById('mallas-loader').innerText = "Error cargando la comunidad (Revisa tu conexión o permisos).";
         }
     };
+
+    // 2. Función para SUBIR (Publicar)
+    window.uploadCurrentMalla = async function() {
+        const uni = document.getElementById('upload-uni').value.trim();
+        const career = document.getElementById('upload-career').value.trim();
+        
+        if(!uni || !career) return alert("Por favor escribe el nombre de la Universidad y la Carrera.");
+        if(courses.length === 0) return alert("Tu malla está vacía. No puedes subir nada.");
+
+        if(!confirm(`¿Publicar tu malla de ${career} (${uni}) para que todos la vean?`)) return;
+
+        try {
+            await addDoc(collection(db, "mallas"), {
+                uni: uni,
+                career: career,
+                coursesJson: JSON.stringify(courses),
+                areasJson: JSON.stringify(customAreas), // Guardamos también los colores/áreas
+                date: serverTimestamp(),
+                author: auth.currentUser ? auth.currentUser.email : "Anónimo"
+            });
+            alert("✅ ¡Malla publicada en la nube con éxito!");
+            renderComunidad(); // Recargar para verla
+        } catch (e) {
+            console.error(e);
+            alert("Error al subir: " + e.message);
+        }
+    };
+
+    // 3. Función para CARGAR una malla de la nube
+    window.loadCloudMalla = function(jsonCourses, hasAreas, jsonAreas) {
+        if(confirm("⚠️ ¿Cargar esta malla? Se reemplazará tu malla actual y tu progreso.")) {
+            try {
+                // Cargar Cursos
+                const newCourses = typeof jsonCourses === 'string' ? JSON.parse(jsonCourses) : jsonCourses;
+                localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
+                
+                // Cargar Áreas (Si existen en la nube)
+                if(hasAreas === "YES") {
+                    const newAreas = typeof jsonAreas === 'string' ? JSON.parse(jsonAreas) : jsonAreas;
+                    localStorage.setItem('lumin_custom_areas', JSON.stringify(newAreas));
+                } else {
+                    // Si es una malla vieja sin áreas, ponemos unas por defecto genéricas
+                    localStorage.removeItem('lumin_custom_areas');
+                }
+
+                // Limpiar progreso
+                localStorage.removeItem('unmsm_adm_v11_c');
+                localStorage.removeItem('unmsm_adm_v11_g');
+
+                alert("Malla cargada correctamente.");
+                location.reload();
+
+            } catch(e) {
+                alert("Error procesando los datos de la malla.");
+                console.error(e);
+            }
+        }
+    }
+
     // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
     // ==========================================
@@ -2551,6 +2614,10 @@
     window.addNewArea = addNewArea;
     window.resetAreas = resetAreas;
     window.removeCustomArea = removeCustomArea;
+
+    // ----------------------------------------------
+    window.uploadCurrentMalla = uploadCurrentMalla;
+    window.loadCloudMalla = loadCloudMalla;
 
     // -----------------------------------------------
 
