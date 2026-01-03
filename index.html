@@ -1000,7 +1000,7 @@
         try {
             const stored = localStorage.getItem('lumin_custom_malla');
             
-            if (stored) {
+            if (stored && stored !== "undefined" && stored !== "null") {
                 const parsed = JSON.parse(stored);
                 // Validamos que lo que recuperamos no sea basura
                 if (isValidMalla(parsed)) {
@@ -1016,7 +1016,12 @@
             }
         } catch (e) {
             console.error("Error crítico cargando datos:", e);
-            // Fallback de emergencia
+            courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
+        }
+
+        // --- SEGURO FINAL (Agrega esto por si acaso) ---
+        // Si por alguna razón extraña sigue vacía, cargamos Admin obligatoriamente
+        if (!courses || courses.length === 0) {
             courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
         }
     }
@@ -2281,16 +2286,17 @@
  
     // ================= GESTIÓN DE MALLAS (CORREGIDO Y SIN RECARGAR) =================
 
-    // --- 1. RESTAURAR ADMINISTRACIÓN ---
+    // --- 1. RESTAURAR ADMINISTRACIÓN (SIN RECARGAR PAGINA) ---
     window.restoreAdminMalla = function() {
         if(confirm("¿Seguro que quieres borrar tu malla personalizada y volver a la oficial de Administración?")) {
-            // 1. Borrar datos del storage
+            // 1. Borrar datos del almacenamiento
             localStorage.removeItem('lumin_custom_malla');
             localStorage.removeItem('lumin_custom_areas');
+            // Borramos progreso para evitar errores
             localStorage.removeItem('unmsm_adm_v11_c');
             localStorage.removeItem('unmsm_adm_v11_g');
 
-            // 2. Cargar datos por defecto en memoria
+            // 2. Cargar datos por defecto EN MEMORIA (Inmediato)
             courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
             
             // 3. Restaurar áreas por defecto
@@ -2300,7 +2306,7 @@
             approved = new Set();
             approvedGrades = {};
 
-            // 5. Redibujar todo inmediatamente
+            // 5. Redibujar la pantalla INMEDIATAMENTE
             renderMalla();
             renderSkills();
             updateStats();
