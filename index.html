@@ -260,41 +260,68 @@
     </nav>
 
     <!-- ========================================== -->
-<!-- NUEVA PÁGINA: SUBIR JSON -->
-<!-- ========================================== -->
+    <!-- PÁGINA 11: GESTIÓN DE DATOS (REDISEÑADA) -->
+    <!-- ========================================== -->
     <div id="page-subirjson" class="page-section">
-    <div style="max-width: 600px; margin: 40px auto; text-align: center;">
-        <h2><span class="material-icons" style="font-size: 2rem; vertical-align: middle; color: var(--primary);">cloud_upload</span> Cargar Respaldo Académico</h2>
-        <p style="color: #666; margin-bottom: 30px;">Sube tu archivo .json para restaurar tu malla, notas y avance.</p>
-
-        <!-- Zona de Carga con Estilo -->
-        <div class="upload-area" id="drop-area" style="background: var(--bg-card); padding: 50px; border: 3px dashed var(--border); border-radius: 15px; transition: all 0.3s;">
-            <span class="material-icons" style="font-size: 4rem; color: #ccc;">description</span>
-            <h3 style="margin: 10px 0;">Arrastra tu archivo JSON aquí</h3>
-            <p style="font-size: 0.9rem; color: #888; margin-bottom: 20px;">o haz clic para buscar en tu computadora</p>
+        <div style="max-width: 1000px; margin: 0 auto;">
             
-            <input type="file" id="json-file-input" accept=".json" style="display: none;" onchange="handleFileSelect(this)">
-            
-            <button onclick="document.getElementById('json-file-input').click()" 
-                    style="background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                Seleccionar Archivo
-            </button>
-        </div>
+            <h2 style="text-align:center; margin-bottom:10px;">☁️ Centro de Carga y Publicación</h2>
+            <p style="text-align:center; color:#666; margin-bottom:30px;">Comparte tu malla con la comunidad o carga un código existente.</p>
 
-        <!-- Previsualización de Datos (Oculto al inicio) -->
-        <div id="upload-preview" style="display: none; margin-top: 30px; background: var(--bg-card); padding: 20px; border-radius: 10px; border-left: 5px solid var(--accent); text-align: left;">
-            <h4 style="margin: 0 0 10px 0;">Archivo detectado: <span id="file-name-display" style="font-weight: normal;"></span></h4>
-            <p style="font-size: 0.9rem;">Se encontraron <b id="course-count-display">0</b> cursos en el archivo.</p>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button onclick="confirmUpload()" style="flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                    ✅ Confirmar y Cargar
-                </button>
-                <button onclick="cancelUpload()" style="background: #c0392b; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                    Cancelar
-                </button>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:30px;">
+                
+                <!-- COLUMNA IZQUIERDA: PUBLICAR (SUBIR A LA COMUNIDAD) -->
+                <div class="stats-card" style="border-top: 5px solid var(--primary); background: #fff;">
+                    <h3 style="color: var(--primary);">📤 Publicar Aporte</h3>
+                    <p style="font-size:0.85rem; color:#666;">Llena los datos para que otros alumnos encuentren tu malla en la pestaña "Comunidad".</p>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label class="form-label">Universidad (Siglas):</label>
+                        <input type="text" id="pub-uni" class="form-select" placeholder="Ej: UNMSM, U. LIMA, UPC...">
+                    </div>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label class="form-label">Carrera Profesional:</label>
+                        <input type="text" id="pub-career" class="form-select" placeholder="Ej: Ingeniería Industrial">
+                    </div>
+
+                    <div style="margin-bottom:15px;">
+                        <label class="form-label">Código JSON de la Malla:</label>
+                        <textarea id="pub-json-area" style="width:100%; height:80px; border:1px solid #ccc; font-family:monospace; font-size:0.75rem; padding:10px; border-radius:6px; resize:vertical;" placeholder="Aquí aparecerá tu código..."></textarea>
+                        
+                        <!-- BOTÓN MÁGICO: Extrae los datos actuales -->
+                        <button onclick="fillJsonWithCurrent()" style="margin-top:5px; width:100%; background:#555; color:white; border:none; padding:8px; cursor:pointer; border-radius:4px; font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:5px;">
+                            <span class="material-icons" style="font-size:14px">content_copy</span> Pegar mi Malla Actual Automáticamente
+                        </button>
+                    </div>
+
+                    <button class="btn-calc-main" style="background:var(--primary); margin-top:10px;" onclick="publishToCommunity()">
+                        🚀 PUBLICAR EN COMUNIDAD
+                    </button>
+                </div>
+
+                <!-- COLUMNA DERECHA: CARGAR (IMPORTAR CÓDIGO) -->
+                <div class="stats-card" style="border-top: 5px solid var(--accent); background: #fff;">
+                    <h3 style="color: #d35400;">📥 Cargar Respaldo</h3>
+                    <p style="font-size:0.85rem; color:#666;">Si tienes un código que te pasó un amigo o guardaste antes, pégalo aquí.</p>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label class="form-label">Pegar Código JSON:</label>
+                        <textarea id="import-json-area" style="width:100%; height:150px; border:1px solid #ccc; font-family:monospace; font-size:0.75rem; padding:10px; background:#fafafa; border-radius:6px; resize:vertical;" placeholder='Ejemplo: [{"id":"MAT1", "name":"Matemática"...}]'></textarea>
+                    </div>
+
+                    <button class="btn-calc-main" style="background:var(--text-main); color:white;" onclick="loadFromTextArea()">
+                        💾 CARGAR Y GUARDAR
+                    </button>
+                    
+                    <div style="margin-top:15px; padding:10px; background:#ffebee; border-radius:6px; color:#c62828; font-size:0.8rem; display:flex; gap:10px; align-items:center;">
+                        <span class="material-icons">warning</span>
+                        <span><b>Advertencia:</b> Al cargar un código nuevo, se borrarán tus notas actuales y se reemplazará tu malla.</span>
+                    </div>
+                </div>
+
             </div>
         </div>
-    </div>
     </div>
 
     <!-- PÁGINA 1: MALLA -->
@@ -1347,6 +1374,11 @@
         
         // --- NUEVO: Cargar las tarjetas de comunidad ---
         if(id === 'comunidad') renderComunidad();
+
+        // ---  ---
+        if(id === 'config') {
+             populateBuilderFromMemory(); // <--- ESTA ES LA LÍNEA CLAVE
+        }
     };
 
     function toggleTheme() {
@@ -2521,8 +2553,58 @@
             // Si el usuario cambia de pestaña, ya verá la nueva malla.
         }
     };
+     window.populateBuilderFromMemory = function() {
+        const area = document.getElementById('builder-cycles-area');
+        area.innerHTML = ''; 
+        builderCycleCount = 0; 
 
-    // ... aquí terminaba window.saveBuilderMalla = function() { ... };
+        // 1. Encontrar cuál es el último ciclo
+        let maxCycle = 10;
+        if (courses.length > 0) {
+            maxCycle = Math.max(...courses.map(c => c.c), 10);
+        }
+
+        // 2. Crear los ciclos vacíos
+        for (let i = 1; i <= maxCycle; i++) {
+            addBuilderCycle(); 
+        }
+
+        // 3. Rellenar los cursos
+        courses.forEach(c => {
+            addBuilderCourse(c.c);
+            const list = document.getElementById(`b-list-${c.c}`);
+            const card = list.lastElementChild;
+
+            if(card) {
+                card.querySelector('.b-name').value = c.name;
+                card.querySelector('.b-cr').value = c.cr;
+                card.querySelector('.b-type').value = c.t;
+                
+                if (c.tags && c.tags.length > 0) {
+                    const areaSelect = card.querySelector('.b-area');
+                    if(areaSelect) areaSelect.value = c.tags[0];
+                }
+            }
+        });
+
+        updateAllBuilderDropdowns();
+        
+        // 4. Marcar requisitos
+        courses.forEach(c => {
+            const list = document.getElementById(`b-list-${c.c}`);
+            const cards = Array.from(list.children);
+            const card = cards.find(div => div.querySelector('.b-name').value === c.name);
+            
+            if(card && c.req && c.req.length > 0) {
+                const reqSelect = card.querySelector('.b-req');
+                Array.from(reqSelect.options).forEach(opt => {
+                    if(c.req.includes(opt.value)) opt.selected = true;
+                });
+            }
+        });
+    };
+    // ------------------------------------------------
+
 
     // ==========================================
     // INICIALIZACIÓN DEL CONSTRUCTOR
@@ -2556,24 +2638,29 @@
         "dianapinarez@gmail.com"
     ];
 
-    // 2. FUNCIÓN DE RENDERIZADO (Con botón de borrar para admins)
+    // 2. FUNCIÓN DE RENDERIZADO (MODIFICADA: SIN FORMULARIO DE SUBIDA)
     window.renderComunidad = async function() {
         const container = document.getElementById('repo-container');
         if(!container) return;
         
-        // Header HTML (Se mantiene igual)
+        // --- AQUÍ ESTÁ EL CAMBIO ---
+        // Hemos quitado los inputs de texto y el botón de subir viejo.
+        // Ahora solo hay un título y un botón para IR a la pestaña de carga.
         container.innerHTML = `
-            <div style="grid-column: 1/-1; background: var(--bg-card); padding:20px; border-radius:12px; margin-bottom:20px; border-left: 5px solid var(--accent); box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-                <h3>☁️ Repositorio Académico Compartido</h3>
-                <p>Sube tu malla actual para compartirla con otros estudiantes.</p>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <input type="text" id="upload-uni" placeholder="Universidad (Ej: UNMSM)" class="form-select" style="max-width:200px;">
-                    <input type="text" id="upload-career" placeholder="Carrera (Ej: Ing. Sistemas)" class="form-select" style="max-width:250px;">
-                    <button class="btn-calc-action" onclick="uploadCurrentMalla()">📤 Publicar mi Malla Actual</button>
+            <div style="grid-column: 1/-1; background: var(--bg-card); padding:20px; border-radius:12px; margin-bottom:20px; border-left: 5px solid var(--primary); box-shadow:0 2px 10px rgba(0,0,0,0.1); display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:15px;">
+                <div>
+                    <h3 style="margin:0;">☁️ Repositorio Académico Compartido</h3>
+                    <p style="margin:5px 0 0 0; color:#666;">Descarga mallas creadas por otros estudiantes o comparte la tuya.</p>
                 </div>
+                
+                <!-- Este botón te lleva a la nueva pestaña que creamos -->
+                <button onclick="showPage('subirjson')" style="background:var(--text-main); color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px;">
+                    <span class="material-icons">upload_file</span> Ir a Publicar mi Malla
+                </button>
             </div>
             <div id="mallas-loader" style="grid-column: 1/-1; text-align:center; padding:20px;">Cargando mallas de la nube...</div>
         `;
+        // ---------------------------
 
         try {
             const q = query(collection(db, "mallas"), orderBy("date", "desc"));
@@ -2582,7 +2669,6 @@
             document.getElementById('mallas-loader').style.display = 'none';
 
             // --- DETECCIÓN DE ADMIN ---
-            // Verificamos si hay un usuario logueado y si su correo está en la lista
             const currentUser = auth.currentUser;
             const userEmail = currentUser ? currentUser.email.toLowerCase() : "";
             const isAdmin = ADMIN_EMAILS.includes(userEmail);
@@ -2592,7 +2678,7 @@
             
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                data.id = docSnap.id; // ¡IMPORTANTE! Guardamos el ID para poder borrar
+                data.id = docSnap.id; 
                 
                 const uni = (data.uni || "Otros").toUpperCase();
                 if(!grouped[uni]) grouped[uni] = [];
@@ -2600,7 +2686,7 @@
             });
 
             if(Object.keys(grouped).length === 0) {
-                container.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#777;">Aún no hay mallas subidas.</div>`;
+                container.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#777; padding:40px;">Aún no hay mallas subidas. ¡Sé el primero en la pestaña "Cargar Datos"!</div>`;
                 return;
             }
 
@@ -2615,7 +2701,7 @@
                     card.className = 'repo-card';
                     const color = malla.uni === 'UNMSM' ? '#8a0303' : (malla.uni === 'UNI' ? '#d35400' : '#2980b9');
                     
-                    // --- BOTÓN DE BORRAR (Solo visible para ti y tu compañera) ---
+                    // --- BOTÓN DE BORRAR (ADMIN) ---
                     let deleteBtn = '';
                     if(isAdmin) {
                         deleteBtn = `
@@ -2623,7 +2709,7 @@
                             <span class="material-icons" style="font-size:14px">delete</span> BORRAR (ADMIN)
                         </button>`;
                     }
-                    // ------------------------------------------------------------
+                    // -------------------------------
 
                     card.innerHTML = `
                         <div class="repo-header" style="background:${color}15; color:${color}; height:80px; font-size:2.5rem;">
@@ -2648,7 +2734,8 @@
 
         } catch (e) {
             console.error("Error cargando mallas: ", e);
-            document.getElementById('mallas-loader').innerText = "Error cargando. " + e.message;
+            const loader = document.getElementById('mallas-loader');
+            if(loader) loader.innerText = "Error cargando. " + e.message;
         }
     };
 
@@ -2669,32 +2756,7 @@
         }
     };
 
-    // 2. Función para SUBIR (Publicar)
-    window.uploadCurrentMalla = async function() {
-        const uni = document.getElementById('upload-uni').value.trim();
-        const career = document.getElementById('upload-career').value.trim();
-        
-        if(!uni || !career) return alert("Por favor escribe el nombre de la Universidad y la Carrera.");
-        if(courses.length === 0) return alert("Tu malla está vacía. No puedes subir nada.");
-
-        if(!confirm(`¿Publicar tu malla de ${career} (${uni}) para que todos la vean?`)) return;
-
-        try {
-            await addDoc(collection(db, "mallas"), {
-                uni: uni,
-                career: career,
-                coursesJson: JSON.stringify(courses),
-                areasJson: JSON.stringify(customAreas), // Guardamos también los colores/áreas
-                date: serverTimestamp(),
-                author: auth.currentUser ? auth.currentUser.email : "Anónimo"
-            });
-            alert("✅ ¡Malla publicada en la nube con éxito!");
-            renderComunidad(); // Recargar para verla
-        } catch (e) {
-            console.error(e);
-            alert("Error al subir: " + e.message);
-        }
-    };
+    
 
     // 3. Función para CARGAR una malla de la nube
     window.loadCloudMalla = function(jsonCourses, hasAreas, jsonAreas) {
@@ -2728,67 +2790,91 @@
     }
 
     // ==========================================
-    // LÓGICA DE LA PESTAÑA 'CARGAR DATOS'
+    // PASO 3: LÓGICA DE CARGA Y PUBLICACIÓN (TEXTO)
     // ==========================================
-    let tempJsonData = null; // Variable temporal para no borrar nada por accidente
 
-    // 1. Cuando seleccionas el archivo
-    window.handleFileSelect = function(input) {
-        const file = input.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const json = JSON.parse(e.target.result);
-                
-                // Validación: ¿Es una lista de cursos?
-                if (!Array.isArray(json)) {
-                    alert("Error: El archivo seleccionado no tiene el formato correcto de una Malla (debe ser una lista []).");
-                    return;
-                }
-
-                // Todo bien: Guardamos temporalmente y mostramos la previsualización
-                tempJsonData = json;
-                
-                document.getElementById('upload-preview').style.display = 'block';
-                document.getElementById('file-name-display').innerText = file.name; // Muestra nombre del archivo
-                document.getElementById('course-count-display').innerText = json.length; // Muestra cantidad de cursos
-                document.getElementById('drop-area').style.display = 'none'; // Oculta la caja grande
-
-            } catch (error) {
-                alert("Error crítico: El archivo no es un JSON válido o está dañado.");
-                console.error(error);
-            }
-        };
-        reader.readAsText(file);
+    // A. Botón "Pegar mi Malla Actual Automáticamente"
+    window.fillJsonWithCurrent = function() {
+        if(courses.length === 0) return alert("Tu malla está vacía, no hay nada que copiar.");
+        const json = JSON.stringify(courses);
+        document.getElementById('pub-json-area').value = json;
     };
 
-    // 2. Cuando das click en "Confirmar"
-    window.confirmUpload = function() {
-        if (!tempJsonData) return;
+    // B. Botón "PUBLICAR EN COMUNIDAD" (Sube a Firebase)
+    window.publishToCommunity = async function() {
+        const uni = document.getElementById('pub-uni').value.trim();
+        const career = document.getElementById('pub-career').value.trim();
+        const jsonText = document.getElementById('pub-json-area').value.trim();
 
-        // Advertencia de seguridad
-        if (confirm("⚠️ ¿Estás seguro? \n\nSe reemplazará tu malla actual con la del archivo y se reiniciarán tus notas para evitar errores de compatibilidad.")) {
+        // 1. Validaciones
+        if(!uni || !career || !jsonText) {
+            return alert("Faltan datos. Por favor completa Universidad, Carrera y el Código JSON.");
+        }
+        try {
+            JSON.parse(jsonText); // Verificamos que sea JSON válido
+        } catch (e) {
+            return alert("El código JSON no es válido. Revisa que esté bien copiado.");
+        }
+
+        if(!confirm(`¿Estás seguro de publicar la malla de ${career} (${uni}) para todos?`)) return;
+
+        try {
+            // 2. Guardar en la Base de Datos (Firestore)
+            await addDoc(collection(db, "mallas"), {
+                uni: uni.toUpperCase(), // Guardar en mayúsculas
+                career: career,
+                coursesJson: jsonText,
+                // Truco: Si el JSON que suben es igual al que tienen puesto, guardamos sus colores (areas)
+                // Si es un JSON externo, guardamos un array vacío para no romper nada.
+                areasJson: (jsonText === JSON.stringify(courses)) ? JSON.stringify(customAreas) : "[]", 
+                date: serverTimestamp(),
+                author: auth.currentUser ? auth.currentUser.email : "Anónimo"
+            });
             
-            // A. Guardamos la nueva malla
-            localStorage.setItem('lumin_custom_malla', JSON.stringify(tempJsonData));
+            alert("✅ ¡Aporte subido a la Comunidad con éxito!");
             
-            // B. Borramos notas antiguas y cursos marcados (para empezar limpio con la nueva malla)
-            localStorage.removeItem('unmsm_adm_v11_c');
-            localStorage.removeItem('unmsm_adm_v11_g');
-            
-            alert("¡Carga exitosa! La página se reiniciará ahora.");
-            location.reload();
+            // 3. Limpiar formulario y llevar a la comunidad
+            document.getElementById('pub-uni').value = '';
+            document.getElementById('pub-career').value = '';
+            document.getElementById('pub-json-area').value = '';
+            showPage('comunidad'); // Cambia de pestaña automáticamente
+
+        } catch (e) {
+            console.error(e);
+            alert("Error al subir: " + e.message);
         }
     };
 
-    // 3. Cuando das click en "Cancelar"
-    window.cancelUpload = function() {
-        tempJsonData = null;
-        document.getElementById('upload-preview').style.display = 'none'; // Ocultar preview
-        document.getElementById('drop-area').style.display = 'block';     // Mostrar caja grande
-        document.getElementById('json-file-input').value = "";            // Limpiar input
+    // C. Botón "CARGAR Y GUARDAR" (Lee el texto de la derecha)
+    window.loadFromTextArea = function() {
+        const jsonText = document.getElementById('import-json-area').value.trim();
+        if(!jsonText) return alert("La caja está vacía. Pega el código primero.");
+
+        try {
+            const newCourses = JSON.parse(jsonText);
+            
+            // Validar que sea una lista
+            if (!Array.isArray(newCourses)) throw new Error("El código no es una lista válida de cursos.");
+
+            // Advertencia final
+            if(confirm("⚠️ ADVERTENCIA: Se reemplazará tu malla actual y se borrarán tus notas y progreso. ¿Continuar?")) {
+                
+                // 1. Guardar nueva malla
+                localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
+                
+                // 2. Reiniciar notas (Importante para evitar errores)
+                localStorage.removeItem('unmsm_adm_v11_c');
+                localStorage.removeItem('unmsm_adm_v11_g');
+                
+                // (Opcional) Si el JSON no traía áreas personalizadas, podríamos resetearlas, 
+                // pero mejor las dejamos como están por si el usuario ya tenía sus colores.
+
+                alert("¡Malla cargada correctamente! Recargando...");
+                location.reload();
+            }
+        } catch (e) {
+            alert("Código inválido: " + e.message);
+        }
     };
 
     // ==========================================
@@ -2829,7 +2915,7 @@
     // Comunidad
     // window.loadRepoMalla = loadRepoMalla; // <--- ESTA LINEA SE BORRA PORQUE YA NO EXISTE
     window.renderComunidad = renderComunidad;
-    window.uploadCurrentMalla = uploadCurrentMalla;
+    
     window.loadCloudMalla = loadCloudMalla;
 
     // Gestión de Áreas (Agregué estas por si acaso las necesitas en los botones HTML)
@@ -2839,9 +2925,7 @@
 
     window.deleteCloudMalla = deleteCloudMalla;
     // -----------------------------------------------
-    window.handleFileSelect = handleFileSelect;
-    window.confirmUpload = confirmUpload;
-    window.cancelUpload = cancelUpload;
+    
 
     // Iniciar la app
     // Aseguramos que el DOM esté listo antes de iniciar
