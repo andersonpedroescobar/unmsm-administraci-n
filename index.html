@@ -987,23 +987,24 @@
     ];
 
     // =========================================================
-    // 2. LÓGICA DE CARGA DE DATOS (CORREGIDO)
+    // 2. LÓGICA DE CARGA DE DATOS (CORREGIDO Y SEGURO)
     // =========================================================
     let courses = []; 
 
-    try {
-        const stored = localStorage.getItem('lumin_custom_malla');
-        if (stored && stored !== "undefined" && stored !== "[]") {
-            courses = JSON.parse(stored);
+    function loadInitialData() {
+        try {
+            const stored = localStorage.getItem('lumin_custom_malla');
+            if (stored && stored !== "undefined" && stored !== "[]" && stored !== "null") {
+                courses = JSON.parse(stored);
+            } else {
+                console.log("No hay malla personalizada, cargando Admin por defecto.");
+                courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
+            }
+        } catch (e) {
+            console.error("Error crítico cargando malla:", e);
+            // Fallback de emergencia
+            courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
         }
-    } catch (e) {
-        console.error("Error cargando malla personalizada", e);
-        courses = [];
-    }
-    
-    // Si no hay personalizada o quedó vacía, usamos la OFICIAL
-    if (!courses || courses.length === 0) {
-        courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
     }
 
     // =========================================================
@@ -1240,7 +1241,11 @@
     // ================= INIT =================
     function init() {
         corregirNombreProyectos();
-        // Cargar datos de memoria
+        
+        // 1. CARGAMOS LA MALLA PRIMERO (ESTO ES LO NUEVO)
+        loadInitialData();
+
+        // Cargar progreso (Checks y notas)
         if(localStorage.getItem('unmsm_adm_v11_c')) approved = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_c')));
         if(localStorage.getItem('unmsm_adm_v11_g')) approvedGrades = JSON.parse(localStorage.getItem('unmsm_adm_v11_g'));
         if(localStorage.getItem('unmsm_adm_v11_s')) acquiredSkills = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_s')));
@@ -1249,21 +1254,17 @@
         // Tema oscuro
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         
-        // --- LO NUEVO: Cargar Áreas Personalizadas ---
+        // --- Cargar Áreas ---
         initCustomAreas(); 
         
         // Renderizar componentes
-        renderMalla();
+        renderMalla(); // Ahora sí dibujará porque 'courses' ya tiene datos
         renderSkills();
         renderHellGrid();
-        
-        // renderKanban(); // <--- OJO: Lo dejé comentado. Si tienes esa función creada, quítale las // del inicio.
         
         initSchedule();
         initCalculator();
         updateStats();
-        
-        // Iniciar constructor
         initBuilder(); 
     }
     window.showPage = function(id) {
