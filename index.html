@@ -987,43 +987,23 @@
     ];
 
     // =========================================================
-    // 2. LÓGICA DE CARGA DE DATOS (CORREGIDO Y ROBUSTO)
+    // 2. LÓGICA DE CARGA DE DATOS (CORREGIDO)
     // =========================================================
     let courses = []; 
 
-    // Función auxiliar para validar si un array de cursos es válido
-    function isValidMalla(data) {
-        return Array.isArray(data) && data.length > 0 && data[0].hasOwnProperty('id');
+    try {
+        const stored = localStorage.getItem('lumin_custom_malla');
+        if (stored && stored !== "undefined" && stored !== "[]") {
+            courses = JSON.parse(stored);
+        }
+    } catch (e) {
+        console.error("Error cargando malla personalizada", e);
+        courses = [];
     }
-
-    function loadInitialData() {
-        try {
-            const stored = localStorage.getItem('lumin_custom_malla');
-            
-            if (stored && stored !== "undefined" && stored !== "null") {
-                const parsed = JSON.parse(stored);
-                // Validamos que lo que recuperamos no sea basura
-                if (isValidMalla(parsed)) {
-                    courses = parsed;
-                } else {
-                    console.warn("Malla guardada corrupta, cargando Admin.");
-                    courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
-                }
-            } else {
-                // Si no hay nada guardado, cargamos la malla por defecto
-                console.log("Iniciando con Malla Admin por defecto.");
-                courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
-            }
-        } catch (e) {
-            console.error("Error crítico cargando datos:", e);
-            courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
-        }
-
-        // --- SEGURO FINAL (Agrega esto por si acaso) ---
-        // Si por alguna razón extraña sigue vacía, cargamos Admin obligatoriamente
-        if (!courses || courses.length === 0) {
-            courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
-        }
+    
+    // Si no hay personalizada o quedó vacía, usamos la OFICIAL
+    if (!courses || courses.length === 0) {
+        courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
     }
 
     // =========================================================
@@ -1164,7 +1144,6 @@
     let approvedGrades = {}; 
     let acquiredSkills = new Set();
     let mySchedule = []; 
-    let communityDataCache = [];
     let chartInstance = null;
     let ppsChartInstance = null;
     let skillsRadarInstance = null;
@@ -1260,11 +1239,7 @@
     // ================= INIT =================
     function init() {
         corregirNombreProyectos();
-        
-        // 1. CARGAMOS LA MALLA PRIMERO (ESTO ES LO NUEVO)
-        loadInitialData();
-
-        // Cargar progreso (Checks y notas)
+        // Cargar datos de memoria
         if(localStorage.getItem('unmsm_adm_v11_c')) approved = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_c')));
         if(localStorage.getItem('unmsm_adm_v11_g')) approvedGrades = JSON.parse(localStorage.getItem('unmsm_adm_v11_g'));
         if(localStorage.getItem('unmsm_adm_v11_s')) acquiredSkills = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_s')));
@@ -1273,17 +1248,21 @@
         // Tema oscuro
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         
-        // --- Cargar Áreas ---
+        // --- LO NUEVO: Cargar Áreas Personalizadas ---
         initCustomAreas(); 
         
         // Renderizar componentes
-        renderMalla(); // Ahora sí dibujará porque 'courses' ya tiene datos
+        renderMalla();
         renderSkills();
         renderHellGrid();
+        
+        // renderKanban(); // <--- OJO: Lo dejé comentado. Si tienes esa función creada, quítale las // del inicio.
         
         initSchedule();
         initCalculator();
         updateStats();
+        
+        // Iniciar constructor
         initBuilder(); 
     }
     window.showPage = function(id) {
@@ -2283,78 +2262,49 @@
         sendMessage(); 
     }
 
- 
-    // ================= GESTIÓN DE MALLAS (CORREGIDO Y SIN RECARGAR) =================
+ // ================= GESTIÓN DE MALLAS (CORREGIDO) =================
 
-    // --- 1. RESTAURAR ADMINISTRACIÓN (SIN RECARGAR PAGINA) ---
+    // --- 1. RESTAURAR ADMINISTRACIÓN ---
     window.restoreAdminMalla = function() {
         if(confirm("¿Seguro que quieres borrar tu malla personalizada y volver a la oficial de Administración?")) {
-            // 1. Borrar datos del almacenamiento
             localStorage.removeItem('lumin_custom_malla');
             localStorage.removeItem('lumin_custom_areas');
-            // Borramos progreso para evitar errores
+            // Limpiamos notas para evitar conflictos de IDs
             localStorage.removeItem('unmsm_adm_v11_c');
             localStorage.removeItem('unmsm_adm_v11_g');
-
-            // 2. Cargar datos por defecto EN MEMORIA (Inmediato)
-            courses = JSON.parse(JSON.stringify(ADMIN_MALLA));
-            
-            // 3. Restaurar áreas por defecto
-            initCustomAreas(); 
-
-            // 4. Limpiar variables de progreso
-            approved = new Set();
-            approvedGrades = {};
-
-            // 5. Redibujar la pantalla INMEDIATAMENTE
-            renderMalla();
-            renderSkills();
-            updateStats();
-            renderAnalytics();
-            
-            alert("✅ Malla de Administración restaurada correctamente.");
+            location.reload();
         }
     };
 
-    // --- 2. IMPORTAR JSON (CARGA MANUAL) ---
+    // --- 2. IMPORTAR JSON ---
     window.importCustomMalla = function() {
         try {
             const jsonText = document.getElementById('json-import-area').value;
-            if(!jsonText.trim()) return alert("La caja está vacía.");
+            if(!jsonText.trim()) return alert("La caja está vacía. Pega el código JSON primero.");
 
             const newCourses = JSON.parse(jsonText);
 
-            // Usamos la validación que creamos en el paso 1
-            if(typeof isValidMalla !== 'undefined' && !isValidMalla(newCourses)) {
-                return alert("El código JSON no tiene el formato correcto.");
-            } else if (!Array.isArray(newCourses) || newCourses.length === 0) {
-                 return alert("El código JSON no es válido.");
+            // Validación simple para asegurar que es una malla válida
+            if(!Array.isArray(newCourses) || newCourses.length === 0 || !newCourses[0].name) {
+                return alert("El código no parece válido o está incompleto.");
             }
 
-            if(confirm(`Se cargará una malla con ${newCourses.length} cursos. Se reiniciará tu progreso. ¿Continuar?`)) {
-                // Actualizar Memoria y Storage
-                courses = newCourses;
-                localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
+            if(confirm(`Se cargará una malla con ${newCourses.length} cursos. Tus notas actuales se reiniciarán. ¿Continuar?`)) {
+                localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
                 
-                // Reiniciar progreso
-                approved = new Set();
-                approvedGrades = {};
+                // Reiniciar progreso para evitar errores
                 localStorage.removeItem('unmsm_adm_v11_c');
                 localStorage.removeItem('unmsm_adm_v11_g');
                 
-                // Redibujar
-                renderMalla();
-                updateStats();
-                renderAnalytics();
-                
                 alert("¡Malla importada con éxito!");
+                location.reload();
             }
         } catch (e) {
             alert("Error de formato JSON: " + e.message);
         }
     };
 
-    // --- 3. COPIAR JSON GENERADO (ESTE SÍ SE QUEDA IGUAL) ---
+    // --- 3. COPIAR JSON GENERADO (NUEVO) ---
     window.copyExportJson = function() {
         const text = document.getElementById('json-export-area');
         text.select();
@@ -2368,55 +2318,6 @@
             alert("¡Código copiado!");
         }
     };
-
-    // --- 4. CARGAR DESDE LA NUBE (COMUNIDAD - NUEVO SIN RELOAD) ---
-    window.loadCloudMalla = function(jsonCourses, hasAreas, jsonAreas) {
-        if(confirm("⚠️ ¿Cargar esta malla? Se reemplazará tu malla actual y tu progreso.")) {
-            try {
-                // 1. Procesar cursos
-                const newCourses = typeof jsonCourses === 'string' ? JSON.parse(jsonCourses) : jsonCourses;
-                
-                // Validación básica
-                if (!Array.isArray(newCourses) || newCourses.length === 0) {
-                    throw new Error("Datos de malla inválidos");
-                }
-
-                courses = newCourses;
-                localStorage.setItem('lumin_custom_malla', JSON.stringify(courses));
-                
-                // 2. Procesar áreas
-                if(hasAreas === "YES") {
-                    const newAreas = typeof jsonAreas === 'string' ? JSON.parse(jsonAreas) : jsonAreas;
-                    customAreas = newAreas;
-                    localStorage.setItem('lumin_custom_areas', JSON.stringify(newAreas));
-                } else {
-                    localStorage.removeItem('lumin_custom_areas');
-                    initCustomAreas(); // Recargar defaults si no trae áreas
-                }
-
-                // 3. Limpiar progreso
-                approved = new Set();
-                approvedGrades = {};
-                localStorage.removeItem('unmsm_adm_v11_c');
-                localStorage.removeItem('unmsm_adm_v11_g');
-
-                // 4. Redibujar todo
-                renderMalla();
-                renderCustomAreas();
-                updateStats();
-                renderAnalytics();
-
-                alert("✅ Malla cargada correctamente.");
-                // Forzamos ir a la pestaña malla para que vean el cambio
-                showPage('malla'); 
-
-            } catch(e) {
-                alert("Error procesando los datos de la malla: " + e.message);
-                console.error(e);
-            }
-        }
-    }
-
 
     // ==========================================
     // 5. CONSTRUCTOR VISUAL DE MALLAS (BUILDER)
@@ -2604,25 +2505,25 @@
     // LÓGICA DE COMUNIDAD EN TIEMPO REAL (FIRESTORE)
     // ==========================================
 
+    // 1. Función para mostrar la interfaz de Comunidad
     // ==========================================
-    // COMUNIDAD AVANZADA (Filtros + Copy JSON + Admin)
+    // ADMINISTRACIÓN DE COMUNIDAD (NUEVO)
     // ==========================================
     
-    // 1. LISTA DE ADMINS
+    // 1. LISTA DE ADMINS (Correos autorizados para borrar)
     const ADMIN_EMAILS = [
         "andersonpedroescobar292@gmail.com",
         "dianapinarez@gmail.com"
     ];
 
-    // 2. FUNCIÓN PRINCIPAL (Carga datos y pinta la interfaz)
+    // 2. FUNCIÓN DE RENDERIZADO (Con botón de borrar para admins)
     window.renderComunidad = async function() {
         const container = document.getElementById('repo-container');
         if(!container) return;
         
-        // A. DIBUJAR LA INTERFAZ DE BÚSQUEDA Y SUBIDA
+        // Header HTML (Se mantiene igual)
         container.innerHTML = `
-            <!-- PANEL DE SUBIDA -->
-            <div style="grid-column: 1/-1; background: var(--bg-card); padding:20px; border-radius:12px; margin-bottom:10px; border-left: 5px solid var(--accent); box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <div style="grid-column: 1/-1; background: var(--bg-card); padding:20px; border-radius:12px; margin-bottom:20px; border-left: 5px solid var(--accent); box-shadow:0 2px 10px rgba(0,0,0,0.1);">
                 <h3>☁️ Repositorio Académico Compartido</h3>
                 <p>Sube tu malla actual para compartirla con otros estudiantes.</p>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -2631,145 +2532,102 @@
                     <button class="btn-calc-action" onclick="uploadCurrentMalla()">📤 Publicar mi Malla Actual</button>
                 </div>
             </div>
-
-            <!-- NUEVO: BARRA DE FILTROS -->
-            <div style="grid-column: 1/-1; display:flex; gap:15px; margin-bottom:20px; align-items:center; background:#f0f2f5; padding:15px; border-radius:8px;">
-                <span class="material-icons" style="color:#666">search</span>
-                <input type="text" id="filter-uni" placeholder="Filtrar por Universidad..." class="form-select" onkeyup="filterCommunity()" style="flex:1;">
-                <input type="text" id="filter-career" placeholder="Filtrar por Carrera..." class="form-select" onkeyup="filterCommunity()" style="flex:1;">
-            </div>
-
             <div id="mallas-loader" style="grid-column: 1/-1; text-align:center; padding:20px;">Cargando mallas de la nube...</div>
-            
-            <!-- Aquí se inyectarán las tarjetas filtradas -->
-            <div id="community-results" style="grid-column: 1/-1; display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;"></div>
         `;
 
         try {
-            // B. DESCARGAR DATOS DE FIREBASE
             const q = query(collection(db, "mallas"), orderBy("date", "desc"));
             const querySnapshot = await getDocs(q);
             
             document.getElementById('mallas-loader').style.display = 'none';
 
-            // C. GUARDAR EN CACHÉ (Memoria)
-            communityDataCache = [];
+            // --- DETECCIÓN DE ADMIN ---
+            // Verificamos si hay un usuario logueado y si su correo está en la lista
+            const currentUser = auth.currentUser;
+            const userEmail = currentUser ? currentUser.email.toLowerCase() : "";
+            const isAdmin = ADMIN_EMAILS.includes(userEmail);
+            // --------------------------
+
+            const grouped = {};
+            
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                data.id = docSnap.id; // Guardamos ID para borrar
-                communityDataCache.push(data);
+                data.id = docSnap.id; // ¡IMPORTANTE! Guardamos el ID para poder borrar
+                
+                const uni = (data.uni || "Otros").toUpperCase();
+                if(!grouped[uni]) grouped[uni] = [];
+                grouped[uni].push(data);
             });
 
-            // D. DIBUJAR TODO POR PRIMERA VEZ
-            filterCommunity();
+            if(Object.keys(grouped).length === 0) {
+                container.innerHTML += `<div style="grid-column:1/-1; text-align:center; color:#777;">Aún no hay mallas subidas.</div>`;
+                return;
+            }
+
+            Object.keys(grouped).sort().forEach(uni => {
+                const section = document.createElement('div');
+                section.style.gridColumn = "1 / -1";
+                section.innerHTML = `<h3 style="border-bottom:2px solid #ccc; padding-bottom:5px; margin-top:20px; color:var(--text-main);"><span class="material-icons" style="vertical-align:bottom">school</span> ${uni}</h3>`;
+                container.appendChild(section);
+
+                grouped[uni].forEach(malla => {
+                    const card = document.createElement('div');
+                    card.className = 'repo-card';
+                    const color = malla.uni === 'UNMSM' ? '#8a0303' : (malla.uni === 'UNI' ? '#d35400' : '#2980b9');
+                    
+                    // --- BOTÓN DE BORRAR (Solo visible para ti y tu compañera) ---
+                    let deleteBtn = '';
+                    if(isAdmin) {
+                        deleteBtn = `
+                        <button onclick="deleteCloudMalla('${malla.id}')" style="background:#c0392b; color:white; border:none; padding:8px; cursor:pointer; width:100%; font-weight:bold; margin-top:5px; border-radius:4px; display:flex; align-items:center; justify-content:center; gap:5px;">
+                            <span class="material-icons" style="font-size:14px">delete</span> BORRAR (ADMIN)
+                        </button>`;
+                    }
+                    // ------------------------------------------------------------
+
+                    card.innerHTML = `
+                        <div class="repo-header" style="background:${color}15; color:${color}; height:80px; font-size:2.5rem;">
+                            <span class="material-icons">folder_shared</span>
+                        </div>
+                        <div class="repo-body">
+                            <div class="repo-uni" style="color:${color}">${malla.uni}</div>
+                            <div class="repo-career">${malla.career}</div>
+                            <div class="repo-stats">
+                                <span>📅 ${new Date(malla.date.seconds * 1000).toLocaleDateString()}</span>
+                                <span style="font-size:0.7rem; color:#aaa;">${malla.author ? 'Autor: ' + malla.author.split('@')[0] : ''}</span>
+                            </div>
+                            <button class="btn-load-repo" onclick='loadCloudMalla(${JSON.stringify(malla.coursesJson)}, "${malla.areasJson ? "YES" : "NO"}", ${JSON.stringify(malla.areasJson || "[]")})'>
+                                Cargar Malla
+                            </button>
+                            ${deleteBtn}
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            });
 
         } catch (e) {
             console.error("Error cargando mallas: ", e);
-            const loader = document.getElementById('mallas-loader');
-            if(loader) loader.innerText = "Error cargando. " + e.message;
+            document.getElementById('mallas-loader').innerText = "Error cargando. " + e.message;
         }
     };
 
-    // 3. FUNCIÓN DE FILTRADO Y DIBUJADO (Se llama al escribir)
-    window.filterCommunity = function() {
-        const resultsDiv = document.getElementById('community-results');
-        if(!resultsDiv) return;
-        resultsDiv.innerHTML = '';
-
-        // Obtener texto de los filtros
-        const textUni = document.getElementById('filter-uni').value.toLowerCase();
-        const textCareer = document.getElementById('filter-career').value.toLowerCase();
-
-        // Verificar Admin
-        const currentUser = auth.currentUser;
-        const userEmail = currentUser ? currentUser.email.toLowerCase() : "";
-        const isAdmin = ADMIN_EMAILS.includes(userEmail);
-
-        // Agrupar datos filtrados
-        const grouped = {};
-        let count = 0;
-
-        communityDataCache.forEach(malla => {
-            // Lógica de Filtro
-            const matchUni = (malla.uni || "").toLowerCase().includes(textUni);
-            const matchCareer = (malla.career || "").toLowerCase().includes(textCareer);
-
-            if(matchUni && matchCareer) {
-                const uniKey = (malla.uni || "Otros").toUpperCase();
-                if(!grouped[uniKey]) grouped[uniKey] = [];
-                grouped[uniKey].push(malla);
-                count++;
-            }
-        });
-
-        if(count === 0) {
-            resultsDiv.innerHTML = `<div style="text-align:center; color:#777; width:100%;">No se encontraron mallas con esos filtros.</div>`;
-            return;
-        }
-
-        // Dibujar Grupos y Tarjetas
-        Object.keys(grouped).sort().forEach(uni => {
-            // Título Universidad (Ocupa todo el ancho)
-            const section = document.createElement('div');
-            section.style.gridColumn = "1 / -1";
-            section.innerHTML = `<h3 style="border-bottom:2px solid #ccc; padding-bottom:5px; margin-top:20px; color:var(--text-main);"><span class="material-icons" style="vertical-align:bottom">school</span> ${uni}</h3>`;
-            resultsDiv.appendChild(section);
-
-            grouped[uni].forEach(malla => {
-                const card = document.createElement('div');
-                card.className = 'repo-card';
-                const color = malla.uni === 'UNMSM' ? '#8a0303' : (malla.uni === 'UNI' ? '#d35400' : '#2980b9');
+    // 3. NUEVA FUNCIÓN PARA EJECUTAR EL BORRADO
+    window.deleteCloudMalla = async function(docId) {
+        if(confirm("⚠️ MODO ADMINISTRADOR:\n\n¿Estás seguro de ELIMINAR PERMANENTEMENTE esta malla de la base de datos?\nEsta acción no se puede deshacer.")) {
+            try {
+                // Borramos usando el ID del documento
+                await deleteDoc(doc(db, "mallas", docId));
+                alert("🗑️ Malla eliminada correctamente.");
                 
-                // Botón Admin
-                let deleteBtn = '';
-                if(isAdmin) {
-                    deleteBtn = `<button onclick="deleteCloudMalla('${malla.id}')" style="background:red; color:white; border:none; padding:5px; margin-top:5px; cursor:pointer; width:100%; border-radius:4px; font-size:0.7rem;">🗑️ BORRAR (ADMIN)</button>`;
-                }
-
-                // NUEVO: Botón Copiar JSON
-                // Usamos encodeURIComponent para evitar errores con comillas en el JSON
-                const jsonStringSafe = encodeURIComponent(malla.coursesJson);
-
-                card.innerHTML = `
-                    <div class="repo-header" style="background:${color}15; color:${color}; height:80px; font-size:2.5rem;">
-                        <span class="material-icons">folder_shared</span>
-                    </div>
-                    <div class="repo-body">
-                        <div class="repo-uni" style="color:${color}">${malla.uni}</div>
-                        <div class="repo-career">${malla.career}</div>
-                        <div class="repo-stats">
-                            <span>📅 ${malla.date ? new Date(malla.date.seconds * 1000).toLocaleDateString() : 'N/A'}</span>
-                            <span style="font-size:0.7rem; color:#aaa;">${malla.author ? malla.author.split('@')[0] : 'Anon'}</span>
-                        </div>
-                        
-                        <button class="btn-load-repo" onclick='loadCloudMalla(${JSON.stringify(malla.coursesJson)}, "${malla.areasJson ? "YES" : "NO"}", ${JSON.stringify(malla.areasJson || "[]")})'>
-                            Cargar Malla
-                        </button>
-                        
-                        <!-- NUEVO BOTÓN COPIAR JSON -->
-                        <button onclick="copyCloudJson('${jsonStringSafe}')" style="background:none; border:1px solid #ccc; color:#555; padding:8px; width:100%; border-radius:6px; margin-top:8px; cursor:pointer; font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:5px;">
-                            <span class="material-icons" style="font-size:14px">content_copy</span> Copiar JSON
-                        </button>
-
-                        ${deleteBtn}
-                    </div>
-                `;
-                resultsDiv.appendChild(card);
-            });
-        });
-    }
-
-    // 4. NUEVA FUNCIÓN: COPIAR JSON AL PORTAPAPELES
-    window.copyCloudJson = function(encodedJson) {
-        try {
-            const jsonStr = decodeURIComponent(encodedJson);
-            navigator.clipboard.writeText(jsonStr).then(() => {
-                alert("✅ ¡JSON copiado al portapapeles!\n\nAhora puedes ir a 'Mi Carrera' -> 'Cargar Malla Externa' y pegarlo ahí.");
-            });
-        } catch(e) {
-            alert("Error al copiar: " + e);
+                // Recargamos la lista para ver que desapareció
+                renderComunidad(); 
+            } catch (e) {
+                alert("Error al eliminar: " + e.message);
+                console.error(e);
+            }
         }
-    }
+    };
 
     // 2. Función para SUBIR (Publicar)
     window.uploadCurrentMalla = async function() {
@@ -2798,6 +2656,36 @@
         }
     };
 
+    // 3. Función para CARGAR una malla de la nube
+    window.loadCloudMalla = function(jsonCourses, hasAreas, jsonAreas) {
+        if(confirm("⚠️ ¿Cargar esta malla? Se reemplazará tu malla actual y tu progreso.")) {
+            try {
+                // Cargar Cursos
+                const newCourses = typeof jsonCourses === 'string' ? JSON.parse(jsonCourses) : jsonCourses;
+                localStorage.setItem('lumin_custom_malla', JSON.stringify(newCourses));
+                
+                // Cargar Áreas (Si existen en la nube)
+                if(hasAreas === "YES") {
+                    const newAreas = typeof jsonAreas === 'string' ? JSON.parse(jsonAreas) : jsonAreas;
+                    localStorage.setItem('lumin_custom_areas', JSON.stringify(newAreas));
+                } else {
+                    // Si es una malla vieja sin áreas, ponemos unas por defecto genéricas
+                    localStorage.removeItem('lumin_custom_areas');
+                }
+
+                // Limpiar progreso
+                localStorage.removeItem('unmsm_adm_v11_c');
+                localStorage.removeItem('unmsm_adm_v11_g');
+
+                alert("Malla cargada correctamente.");
+                location.reload();
+
+            } catch(e) {
+                alert("Error procesando los datos de la malla.");
+                console.error(e);
+            }
+        }
+    }
 
     // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
@@ -2820,8 +2708,6 @@
     window.sendMessage = sendMessage;
     window.handleChatEnter = handleChatEnter;
     window.askAI = askAI;
-    window.filterCommunity = filterCommunity;
-    window.copyCloudJson = copyCloudJson;
     
     // Gestión de Mallas
     window.restoreAdminMalla = restoreAdminMalla;
