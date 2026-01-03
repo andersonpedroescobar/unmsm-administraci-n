@@ -237,7 +237,7 @@
         <div class="nav-brand">
             <!-- MODIFICACIÓN: IMAGEN UNMSM -->
             <img src="unmsm.png" alt="UNMSM" class="nav-logo-img">
-            <span>Administración UNMSM</span>
+            <span>Lumin Study</span>
         </div>
         <div class="nav-menu">
             <button class="nav-btn" onclick="showPage('config')"><span class="material-icons">school</span> Mi Carrera</button>
@@ -674,7 +674,7 @@
                     <span class="material-icons" style="font-size:2rem; color:#4dd0e1;">psychology</span>
                     <div style="flex:1;">
                         <div style="font-weight:bold; display:flex; align-items:center; gap:10px;">
-                            San Marcos BOT
+                            Lumin BOT
                         </div>
                     </div>
                     
@@ -1192,9 +1192,37 @@
         }
     });
 
+    // =========================================================
+    // PARCHE: Corrige "Gestión/Ops" a "Proyectos" automáticamente
+    // =========================================================
+    function corregirNombreProyectos() {
+        // 1. Revisamos si el alumno tiene datos guardados
+        const stored = localStorage.getItem('lumin_custom_areas');
+        
+        if (stored) {
+            let areas = JSON.parse(stored);
+            let huboCambio = false;
+
+            // 2. Buscamos el área 'op' y forzamos el nombre nuevo
+            areas.forEach(area => {
+                if (area.id === 'op' && area.name !== 'Proyectos') {
+                    area.name = 'Proyectos'; // <--- AQUÍ OCURRE LA MAGIA
+                    huboCambio = true;
+                }
+            });
+
+            // 3. Si hicimos cambios, guardamos de nuevo en la memoria del navegador
+            if (huboCambio) {
+                localStorage.setItem('lumin_custom_areas', JSON.stringify(areas));
+                console.log("Nombre actualizado a 'Proyectos' con éxito.");
+            }
+        }
+    }
+
     // ================= INIT =================
     // ================= INIT =================
     function init() {
+        corregirNombreProyectos();
         // Cargar datos de memoria
         if(localStorage.getItem('unmsm_adm_v11_c')) approved = new Set(JSON.parse(localStorage.getItem('unmsm_adm_v11_c')));
         if(localStorage.getItem('unmsm_adm_v11_g')) approvedGrades = JSON.parse(localStorage.getItem('unmsm_adm_v11_g'));
