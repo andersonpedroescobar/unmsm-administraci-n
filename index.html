@@ -359,10 +359,28 @@
                     <p style="margin-top:15px; font-weight:bold; color:var(--primary);" id="chart-text">0% Completado</p>
                 </div>
 
-                <!-- Estadísticas y Proyección -->
+                <!-- Estadísticas y Proyección (EDITABLE) -->
                 <div class="stats-card">
-                    <h3>Créditos vs Meta (220)</h3>
-                    <p style="font-size:0.8rem; color:#666;">Se requieren 220 Créditos para egresar, independientemente de cuántos electivos extra lleves.</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3 style="margin:0;">Metas Académicas</h3>
+                        <button onclick="toggleGoalsEdit()" style="background:none; border:none; color:#666; cursor:pointer; text-decoration:underline; font-size:0.8rem;">
+                            <span class="material-icons" style="font-size:1rem; vertical-align:middle;">edit</span> Editar
+                        </button>
+                    </div>
+
+                    <!-- Inputs de Configuración (Ocultos por defecto, se abren con el botón) -->
+                    <div id="goals-config-area" style="display:none; background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #eee;">
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:0.8rem; font-weight:bold;">Meta Total Créditos:</label>
+                            <input type="number" id="config-total-credits" value="220" style="width:100%; padding:5px; border:1px solid #ccc; border-radius:4px;" onchange="saveDashboardSettings()">
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:bold;">Promedio Créditos x Ciclo:</label>
+                            <input type="number" id="config-cycle-credits" value="21" style="width:100%; padding:5px; border:1px solid #ccc; border-radius:4px;" onchange="saveDashboardSettings()">
+                        </div>
+                    </div>
+                    
+                    <p style="font-size:0.8rem; color:#666;">Progreso basado en tu meta de <b id="lbl-total-goal">220</b> créditos.</p>
                     
                     <div class="stat-row">
                         <div class="stat-label"><span>Progreso Real</span> <span id="stat-total">0 / 220</span></div>
@@ -372,7 +390,7 @@
                     <div class="projection-box">
                         <div class="projection-title"><span class="material-icons">timer</span> Tiempo Restante</div>
                         <p id="grad-projection" style="font-size:1.1rem; margin:0; font-weight:500;">Calculando...</p>
-                        <small style="display:block; margin-top:5px; opacity:0.8;">*Cálculo basado en 21 créditos por ciclo.</small>
+                        <small style="display:block; margin-top:5px; opacity:0.8;" id="lbl-cycle-projection">*Cálculo basado en 21 créditos por ciclo.</small>
                     </div>
                     
                     <div style="margin-top:20px; text-align:center; padding:15px; background:rgba(0,0,0,0.03); border-radius:8px;">
@@ -1551,9 +1569,50 @@
         }
     };
 
-    // ================= DASHBOARD & PDF =================
-    function renderDashboard() {
-        const TOTAL_REQUIRED = 220; 
+    // ==========================================
+    // LÓGICA DE PROGRESO (EDITABLE - VERSIÓN NUEVA)
+    // ==========================================
+    
+    // 1. Función para mostrar/ocultar el menú de edición
+    window.toggleGoalsEdit = function() {
+        const area = document.getElementById('goals-config-area');
+        if(area) area.style.display = area.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // 2. Función para guardar preferencias cuando el alumno cambia los números
+    window.saveDashboardSettings = function() {
+        const total = document.getElementById('config-total-credits').value;
+        const cycle = document.getElementById('config-cycle-credits').value;
+        
+        // Guardamos en la memoria del navegador
+        localStorage.setItem('lumin_conf_total', total);
+        localStorage.setItem('lumin_conf_cycle', cycle);
+        
+        renderDashboard(); // Recalcular inmediatamente con los nuevos datos
+    };
+
+    // 3. Función Render Dashboard (REEMPLAZA A LA ANTIGUA)
+    window.renderDashboard = function() {
+        // A. Cargar configuración guardada o usar valores por defecto (220 y 21)
+        const TOTAL_REQUIRED = parseInt(localStorage.getItem('lumin_conf_total')) || 220; 
+        const CREDITS_PER_CYCLE = parseInt(localStorage.getItem('lumin_conf_cycle')) || 21;
+
+        // B. Actualizar las cajitas del HTML para que muestren el valor actual
+        const inputTotal = document.getElementById('config-total-credits');
+        const inputCycle = document.getElementById('config-cycle-credits');
+        
+        // Solo actualizamos el valor si el usuario no está escribiendo en ese momento
+        if(inputTotal && document.activeElement !== inputTotal) inputTotal.value = TOTAL_REQUIRED;
+        if(inputCycle && document.activeElement !== inputCycle) inputCycle.value = CREDITS_PER_CYCLE;
+
+        // Actualizar textos informativos
+        const lblGoal = document.getElementById('lbl-total-goal');
+        if(lblGoal) lblGoal.innerText = TOTAL_REQUIRED;
+        
+        const lblProj = document.getElementById('lbl-cycle-projection');
+        if(lblProj) lblProj.innerText = `*Cálculo basado en ${CREDITS_PER_CYCLE} créditos por ciclo.`;
+
+        // C. Calcular créditos aprobados (Igual que antes)
         let appCr = 0;
         courses.forEach(c => {
             if(approved.has(c.id)) {
@@ -1561,36 +1620,53 @@
             }
         });
 
+        // D. Cálculos de barra y porcentaje con los NUEVOS valores
         let percentage = Math.round((appCr / TOTAL_REQUIRED) * 100);
         let visualPercentage = Math.min(100, percentage);
 
-        document.getElementById('stat-total').innerText = `${appCr} / ${TOTAL_REQUIRED}`;
-        document.getElementById('bar-total').style.width = `${visualPercentage}%`;
+        const statTotal = document.getElementById('stat-total');
+        if(statTotal) statTotal.innerText = `${appCr} / ${TOTAL_REQUIRED}`;
         
-        document.getElementById('chart-text').innerText = appCr >= TOTAL_REQUIRED ? `¡Meta Cumplida!` : `${percentage}% Completado`;
+        const barTotal = document.getElementById('bar-total');
+        if(barTotal) barTotal.style.width = `${visualPercentage}%`;
         
+        const chartText = document.getElementById('chart-text');
+        if(chartText) chartText.innerText = appCr >= TOTAL_REQUIRED ? `¡Meta Cumplida!` : `${percentage}% Completado`;
+        
+        // E. Proyección de tiempo con el NUEVO valor de créditos por ciclo
         const remaining = Math.max(0, TOTAL_REQUIRED - appCr);
-        const cyclesLeft = Math.ceil(remaining / 21);
-        document.getElementById('grad-projection').innerHTML = appCr >= TOTAL_REQUIRED ? 
+        const cyclesLeft = Math.ceil(remaining / CREDITS_PER_CYCLE);
+        
+        const gradProj = document.getElementById('grad-projection');
+        if(gradProj) {
+            gradProj.innerHTML = appCr >= TOTAL_REQUIRED ? 
             "<b style='color:green'>¡FELICIDADES! Tienes créditos para egresar.</b>" : 
             `Faltan aprox. <b>${cyclesLeft} ciclos</b> académicos.`;
+        }
 
-        const ctx = document.getElementById('progressChart').getContext('2d');
-        if(chartInstance) chartInstance.destroy();
+        // F. Dibujar Gráfico (Igual que antes)
+        const ctxEl = document.getElementById('progressChart');
+        if(ctxEl) {
+            const ctx = ctxEl.getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aprobados', 'Pendientes'],
+                    datasets: [{
+                        data: [Math.min(appCr, TOTAL_REQUIRED), remaining],
+                        backgroundColor: [appCr >= TOTAL_REQUIRED ? '#27ae60' : '#8a0303', '#eee'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '70%', plugins: { legend: { display: true, position: 'bottom' } } }
+            });
+        }
         
-        chartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Aprobados', 'Pendientes'],
-                datasets: [{
-                    data: [Math.min(appCr, TOTAL_REQUIRED), remaining],
-                    backgroundColor: [appCr >= TOTAL_REQUIRED ? '#27ae60' : '#8a0303', '#eee'],
-                    borderWidth: 0
-                }]
-            },
-            options: { cutout: '70%', plugins: { legend: { display: true, position: 'bottom' } } }
-        });
-    }
+        // Actualizar PPS (Por si acaso)
+        if(typeof updateStats === 'function') updateStats();
+    };
 
     function exportPDF() {
         const el = document.getElementById('export-content');
@@ -2474,23 +2550,39 @@
         return gathered;
     }
 
-    // Actualizar todos los dropdowns de requisitos cuando alguien escribe un nombre
+    // ==========================================
+    // CORRECCIÓN: ACTUALIZAR DROPDOWNS SIN PERDER SELECCIÓN
+    // ==========================================
     window.updateAllBuilderDropdowns = function() {
-        const allCourses = getCoursesFromBuilder(100); // Todos
+        const allCourses = getCoursesFromBuilder(100); // Obtener todos los cursos actuales
+        
         // Recorrer todos los selects de requisito
         document.querySelectorAll('.b-req').forEach(select => {
-            const currentVal = select.value;
+            // 1. MEMORIZAR: Guardamos qué IDs estaban seleccionados antes de borrar
+            const savedSelections = Array.from(select.selectedOptions).map(opt => opt.value);
+
             // Buscar en qué ciclo está este select para mostrar solo anteriores
-            const parentCycle = select.closest('.builder-cycle').id.replace('b-cycle-','');
+            const parentCycle = parseInt(select.closest('.builder-cycle').id.replace('b-cycle-',''));
             
             let opts = '<option value="">-- Sin Requisito --</option>';
+            
             allCourses.forEach(c => {
-                if(c.c < parseInt(parentCycle)) { // Solo cursos de ciclos anteriores
-                    opts += `<option value="${c.id}">${c.name}</option>`;
+                // Solo cursos de ciclos anteriores
+                if(c.c < parentCycle) { 
+                    // 2. RECUPERAR: Si el ID estaba guardado, le ponemos 'selected'
+                    const isSelected = savedSelections.includes(c.id) ? 'selected' : '';
+                    opts += `<option value="${c.id}" ${isSelected}>${c.name}</option>`;
                 }
             });
+
             select.innerHTML = opts;
-            select.value = currentVal; // Intentar mantener selección
+            
+            // Forzar actualización visual si es necesario (para algunos navegadores)
+            if(savedSelections.length > 0) {
+                 Array.from(select.options).forEach(opt => {
+                     if(savedSelections.includes(opt.value)) opt.selected = true;
+                 });
+            }
         });
     };
 
@@ -2928,8 +3020,9 @@
 
     window.deleteCloudMalla = deleteCloudMalla;
     // -----------------------------------------------
+    window.toggleGoalsEdit = toggleGoalsEdit;
+    window.saveDashboardSettings = saveDashboardSettings;
     
-
     // Iniciar la app
     // Aseguramos que el DOM esté listo antes de iniciar
     if (document.readyState === 'loading') {
