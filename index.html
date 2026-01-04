@@ -256,6 +256,11 @@
             <button class="nav-btn" onclick="showPage('subirjson')"><span class="material-icons">upload_file</span> Cargar Datos</button>
             
             <button class="icon-btn" onclick="toggleTheme()" title="Modo Oscuro"><span class="material-icons">dark_mode</span></button>
+
+            <!-- Botón Salir -->
+            <button class="icon-btn" onclick="logout()" title="Cerrar Sesión">
+               <span class="material-icons" style="color: #ffcccc;">logout</span>
+            </button>
         </div>
     </nav>
 
@@ -1335,13 +1340,16 @@
         // Tema oscuro
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         
+
+        loadHellEvents(); // <--- AGREGAR ESTA LÍNEA para que cargue al abrir la página
+        renderHellGrid(); // <--- AGREGAR ESTA LÍNEA para que dibuje los cuadritos
+
         // --- LO NUEVO: Cargar Áreas Personalizadas ---
         initCustomAreas(); 
         
         // Renderizar componentes
         renderMalla();
         renderSkills();
-        renderHellGrid();
         
         // renderKanban(); // <--- OJO: Lo dejé comentado. Si tienes esa función creada, quítale las // del inicio.
         
@@ -1350,7 +1358,8 @@
         updateStats();
         
         // Iniciar constructor
-        initBuilder(); 
+        initBuilder();
+        
     }
     window.showPage = function(id) {
         // 1. Ocultar todas las secciones y desactivar botones
@@ -2153,35 +2162,46 @@
         document.body.removeChild(link);
     }
 
-    // ================= ESTRATEGIA & IA AVANZADA =================
+    // ================= ESTRATEGIA & IA (CON GUARDADO) =================
 
     let deadlineEvents = [];
-    // Estructura de evento: { week: 1-16, name: "Parcial", type: 1(Tarea)|2(Trabajo)|3(Examen) }
 
-    // Init Logic for Strategy Page
-    function initStrategy() {
-        if(localStorage.getItem('unmsm_adm_v11_evts')) {
-            deadlineEvents = JSON.parse(localStorage.getItem('unmsm_adm_v11_evts'));
-        }
-        
-        // Poner fecha de inicio por defecto (Lunes actual o 1ro de Mes)
-        const savedDate = localStorage.getItem('unmsm_adm_v11_startdate');
-        const dateInput = document.getElementById('cycle-start-date');
-        if(savedDate) {
-            dateInput.value = savedDate;
+    // 1. FUNCIÓN PARA CARGAR (Reemplaza a initStrategy)
+    // Busca datos guardados al abrir la página
+    function loadHellEvents() {
+        const saved = localStorage.getItem('lumin_heatmap_events');
+        if(saved) {
+            deadlineEvents = JSON.parse(saved);
         } else {
-            dateInput.valueAsDate = new Date();
+            deadlineEvents = [];
         }
 
-        dateInput.addEventListener('change', (e) => {
-            localStorage.setItem('unmsm_adm_v11_startdate', e.target.value);
-        });
-
-        renderHellGrid();
+        // Cargar también la fecha de inicio
+        const savedDate = localStorage.getItem('lumin_heatmap_start');
+        const dateInput = document.getElementById('cycle-start-date');
+        if(dateInput) {
+            if(savedDate) {
+                dateInput.value = savedDate;
+            } else {
+                dateInput.valueAsDate = new Date(); // Fecha de hoy por defecto
+            }
+            // Guardar automáticamente cuando cambien la fecha
+            dateInput.addEventListener('change', saveHellEvents);
+        }
     }
 
-    // --- 1. LÓGICA DEL MAPA DE CALOR (HELL WEEK) ---
-    function addHellEvent() {
+    // 2. FUNCIÓN PARA GUARDAR
+    function saveHellEvents() {
+        localStorage.setItem('lumin_heatmap_events', JSON.stringify(deadlineEvents));
+        
+        const dateInput = document.getElementById('cycle-start-date');
+        if(dateInput) {
+            localStorage.setItem('lumin_heatmap_start', dateInput.value);
+        }
+    }
+
+    // 3. AGREGAR EVENTO (Ahora guarda automáticamente)
+    window.addHellEvent = function() {
         const week = parseInt(document.getElementById('evt-week').value);
         const name = document.getElementById('evt-name').value;
         const type = parseInt(document.getElementById('evt-type').value);
@@ -2190,28 +2210,28 @@
 
         deadlineEvents.push({ week, name, type });
         deadlineEvents.sort((a,b) => a.week - b.week);
-        saveEvents();
+        
+        saveHellEvents(); // <--- GUARDA AQUÍ
         renderHellGrid();
         
         // Disparar IA si la semana se vuelve crítica
         const weekLoad = deadlineEvents.filter(e => e.week === week).reduce((acc, e) => acc + e.type, 0);
-        if(weekLoad >= 5) {
-            addAIMessage(`⚠️ <b>¡Atención Estratégica!</b> Acabas de sobrecargar la <b>Semana ${week}</b>. <br>Recomendación: Empieza los resúmenes o avances en la Semana ${Math.max(1, week-2)}.`);
+        if(weekLoad >= 5 && typeof addAIMessage === 'function') {
+             addAIMessage(`⚠️ <b>¡Atención Estratégica!</b> Acabas de sobrecargar la <b>Semana ${week}</b>. <br>Recomendación: Empieza los resúmenes o avances en la Semana ${Math.max(1, week-2)}.`);
         }
-    }
+    };
 
-    function removeHellEvent(index) {
+    // 4. BORRAR EVENTO (Ahora guarda automáticamente)
+    window.removeHellEvent = function(index) {
         deadlineEvents.splice(index, 1);
-        saveEvents();
+        saveHellEvents(); // <--- GUARDA AQUÍ
         renderHellGrid();
-    }
+    };
 
-    function saveEvents() {
-        localStorage.setItem('unmsm_adm_v11_evts', JSON.stringify(deadlineEvents));
-    }
-
+    // 5. DIBUJAR LA GRILLA (Se mantiene igual, necesaria para que funcione lo anterior)
     function renderHellGrid() {
         const grid = document.getElementById('hell-grid');
+        if(!grid) return;
         grid.innerHTML = '';
 
         for(let w=1; w<=16; w++) {
@@ -2235,7 +2255,6 @@
             const box = document.createElement('div');
             box.className = `week-box ${intensityClass}`;
             
-            // CORRECCIÓN AQUÍ: overflow-y: auto para permitir scroll si hay muchos items
             box.innerHTML = `
                 <div class="week-header">
                     <span>Semana ${w}</span>
@@ -2976,6 +2995,19 @@
     };
 
     // ==========================================
+    // CERRAR SESIÓN
+    // ==========================================
+    window.logout = function() {
+        if(confirm("¿Cerrar sesión y salir?")) {
+            signOut(auth).then(() => {
+                location.reload(); // Recargar para volver al login
+            }).catch((error) => {
+                console.error(error);
+            });
+        }
+    };
+
+    // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
     // ==========================================
     window.showPage = showPage;
@@ -3025,6 +3057,8 @@
     // -----------------------------------------------
     window.toggleGoalsEdit = toggleGoalsEdit;
     window.saveDashboardSettings = saveDashboardSettings;
+
+    window.logout = logout;
     
     // Iniciar la app
     // Aseguramos que el DOM esté listo antes de iniciar
