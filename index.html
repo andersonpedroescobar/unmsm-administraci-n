@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Académico Administración - UNMSM PRO</title>
+    <title>Portal Académico Lumin Study</title>
     <!-- Iconos -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- Chart.js -->
@@ -774,8 +774,8 @@
                 
                 <div id="chat-history" class="chat-area">
                     <div class="msg-ai">
-                        Hola, colega. Soy tu asistente académico UNMSM.<br>
-                        Puedo analizar tu <b>Mapa de Calor</b>, tus <b>Notas</b> y resolver dudas complejas de Finanzas o Gestión.
+                        Hola. Soy <b>Lumin Bot</b>, tu copiloto universitario.<br>
+                        Puedo ayudarte a organizar tu estudio, analizar tu malla o darte consejos profesionales para <b>cualquier carrera</b>.
                     </div>
                 </div>
 
@@ -2352,19 +2352,22 @@
         }
         // -----------------------------------------------------
 
-        // 3. Prompt Maestro Actualizado (Más flexible)
+        // 3. Prompt Maestro Actualizado (GENÉRICO Y POTENTE)
         const systemPrompt = `
-            Actúa como un Asesor Académico Experto de Administración UNMSM y Mentor Profesional.
+            Actúa como un Asesor Académico Universitario de Alto Nivel y Mentor Profesional (Lumin Bot).
             
             CONTEXTO DEL ALUMNO:
-            - Malla Curricular (Resumen): ${mallaResumen}
             - Créditos: ${ctx.creditos} | Promedio: ${ctx.promedio}
             - Horario: ${ctx.horario}
-
+            - Próximos Exámenes: ${ctx.examenes}
+            - Skills/Habilidades: ${ctx.skills}
+            
             INSTRUCCIONES:
-            1. Si la pregunta es sobre la carrera, cursos o requisitos, BASATE en la Malla Curricular provista.
-            2. Si la pregunta es GENERAL (ej: "¿Qué es el EBITDA?", "Consejos para entrevista", "Cómo redactar un correo"), responde usando tu conocimiento general experto.
-            3. Sé motivador, breve y estratégico. Usa negritas <b></b> para resaltar conceptos clave.
+            1. Eres un experto en TODAS las carreras (Ingeniería, Medicina, Ciencias, Gestión, etc.). Adapta tu respuesta al contexto de la pregunta.
+            2. Si preguntan sobre anatomía, responde como médico. Si es sobre código, como ingeniero de software.
+            3. Si la pregunta es sobre organización o la malla, usa los datos del CONTEXTO DEL ALUMNO provisto arriba.
+            4. Sé motivador, breve, estratégico y usa negritas <b></b> para resaltar ideas clave.
+            5. Tu objetivo es que el alumno apruebe y consiga trabajo.
             
             PREGUNTA DEL ALUMNO: "${text}"
         `;
