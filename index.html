@@ -236,6 +236,74 @@
         .btn-load-repo { width: 100%; background: var(--text-main); color: var(--bg-card); border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: auto; transition: opacity 0.2s; }
         .btn-load-repo:hover { opacity: 0.8; }
 
+
+        /* =========================================
+       ESTILOS DEL GENERADOR AUTOMÁTICO (IA)
+       ========================================= */
+       .gen-course-box { 
+        border: 1px solid #ddd; 
+        padding: 15px; 
+        border-radius: 8px; 
+        background: #fafafa; 
+        position: relative; 
+        border-left: 4px solid var(--accent);
+        transition: transform 0.2s;
+        }
+        .gen-course-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .gen-course-box h4 { 
+        margin: 0 0 10px 0; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+        }
+        .gc-name {
+        font-size: 1rem;
+        padding: 5px;
+        border: 1px solid #ccc; /* Borde suave */
+        border-radius: 4px;
+        width: 70%;
+        background: white;
+        }
+        .gc-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        }
+        .gen-section-row { 
+        display: flex; 
+        gap: 5px; 
+        align-items: center; 
+        background: white; 
+        padding: 8px; 
+        border: 1px solid #eee; 
+        border-radius: 4px; 
+        flex-wrap: wrap; /* Para móviles */
+        }
+        .gen-del-btn { 
+        color: #c0392b; 
+        cursor: pointer; 
+        font-weight: bold; 
+        background: none; 
+        border: none; 
+        font-size: 1.2rem;
+        padding: 0 5px;
+        }
+        .gen-mini-block { 
+        position: absolute; 
+        color: white; 
+        font-size: 0.55rem; 
+        padding: 2px; 
+        border-radius: 2px; 
+        overflow: hidden; 
+        line-height: 1.1;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        z-index: 10;
+        }
+
         /*  ⬆️⬆️⬆️  fin del código ⬆️⬆️⬆️ */
     </style>
 </head>
@@ -550,7 +618,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
             <h2 style="margin:0;">Simulador de Matrícula</h2>
             <div style="display:flex; gap:10px;">
-                <!-- MODIFICACIÓN: BOTÓN ICS GOOGLE CALENDAR -->
+                <!-- BOTÓN ICS GOOGLE CALENDAR -->
                 <button class="btn-export btn-ics" style="margin:0; font-size:0.9rem;" onclick="downloadICS()">
                     <span class="material-icons">event</span> Exportar Google Calendar
                 </button>
@@ -559,14 +627,63 @@
                 </button>
             </div>
         </div>
+
+        <!-- ========================================== -->
+        <!-- NUEVO: GENERADOR AUTOMÁTICO DE HORARIOS (IA) -->
+        <!-- ========================================== -->
+        <div style="margin-bottom: 20px;">
+            <button onclick="toggleGenerator()" style="background: var(--accent); color: #333; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons">auto_awesome</span> Abrir Generador Automático (IA)
+            </button>
+
+            <div id="generator-panel" style="display: none; margin-top: 15px; background: #fff; padding: 20px; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                <h3 style="margin-top:0;">🤖 Generador de Combinaciones</h3>
+                <p style="font-size:0.9rem; color:#666;">Agrega los cursos y sus posibles horarios (secciones). El sistema buscará la combinación perfecta que no tenga cruces.</p>
+                
+                <!-- ÁREA 1: DEFINIR CURSOS Y HORARIOS -->
+                <div id="gen-inputs-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+                    <!-- Aquí se agregan las cajitas con JS -->
+                </div>
+
+                <button onclick="addGenCourse()" style="background: #eee; border: 1px dashed #999; padding: 10px; width: 100%; cursor: pointer; border-radius: 6px; font-weight: bold; color: #555;">
+                    + Agregar Curso al Generador
+                </button>
+
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+
+                <!-- ÁREA 2: BOTÓN MÁGICO -->
+                <button onclick="runGenerator()" style="width: 100%; background: var(--primary); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                    ✨ CALCULAR MEJORES HORARIOS
+                </button>
+
+                <!-- ÁREA 3: RESULTADOS -->
+                <div id="gen-results-area" style="display: none; margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <button onclick="prevSchedule()" class="nav-btn" style="background:#555;">◀ Anterior</button>
+                        <strong id="gen-counter-display">Opción 1 de 5</strong>
+                        <button onclick="nextSchedule()" class="nav-btn" style="background:#555;">Siguiente ▶</button>
+                    </div>
+                    
+                    <!-- Mini visualizador del horario generado -->
+                    <div id="gen-preview-grid" style="border: 1px solid #ccc; background: white; height: 300px; position: relative; overflow-y: auto;">
+                        <!-- Se dibuja con JS -->
+                    </div>
+
+                    <button onclick="applyGeneratedSchedule()" style="width: 100%; margin-top: 15px; background: #27ae60; color: white; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                        ✅ Usar este Horario
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- FIN DEL GENERADOR -->
         
         <div class="scheduler-container">
-            <!-- COLUMNA IZQUIERDA: CONTROLES -->
+            <!-- COLUMNA IZQUIERDA: CONTROLES MANUALES -->
             <div class="scheduler-controls">
                 <h3>Agregar Curso</h3>
                 <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">Filtra y selecciona tus cursos.</p>
                 
-                <!-- 1. NUEVO: FILTRO POR CICLO -->
+                <!-- 1. FILTRO POR CICLO -->
                 <div class="form-group">
                     <label class="form-label">Filtrar por Ciclo:</label>
                     <select id="sched-cycle-filter" class="form-select" onchange="updateScheduleDropdowns()">
@@ -585,7 +702,7 @@
                     <select id="sched-course" class="form-select"></select>
                 </div>
 
-                <!-- 3. SELECTOR DE DÍA (SE MANTIENE IGUAL) -->
+                <!-- 3. SELECTOR DE DÍA -->
                 <div class="form-group">
                     <label class="form-label">Día:</label>
                     <select id="sched-day" class="form-select">
@@ -598,11 +715,10 @@
                     </select>
                 </div>
 
-                <!-- 4. HORAS (MODIFICADO: CON MINUTOS) -->
+                <!-- 4. HORAS -->
                 <div class="form-group" style="display:flex; gap:10px;">
                     <div style="flex:1">
                         <label class="form-label">Inicio:</label>
-                        <!-- type="time" crea el selector de reloj -->
                         <input type="time" id="sched-start" class="form-select" value="08:00">
                     </div>
                     <div style="flex:1">
@@ -611,7 +727,7 @@
                     </div>
                 </div>
 
-                <!-- 5. CRÉDITOS Y BOTONES (SE MANTIENE IGUAL) -->
+                <!-- 5. CRÉDITOS Y BOTONES -->
                 <div style="margin-bottom:20px; padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;">
                     <strong>Créditos: </strong> <span id="sim-credits">0</span>
                 </div>
@@ -619,7 +735,7 @@
                 <button onclick="clearSchedule()" style="width:100%; margin-top:10px; background:none; border:1px solid #ccc; padding:10px; border-radius:6px; cursor:pointer; color:var(--text-main);">Limpiar</button>
             </div>
 
-            <!-- COLUMNA DERECHA: LA TABLA DEL HORARIO (NO TOCAR) -->
+            <!-- COLUMNA DERECHA: LA TABLA DEL HORARIO -->
             <div class="scheduler-grid-wrapper" id="schedule-export-area">
                 <div class="time-grid" id="schedule-grid">
                     <div class="grid-header">Hora</div><div class="grid-header">Lun</div><div class="grid-header">Mar</div><div class="grid-header">Mié</div><div class="grid-header">Jue</div><div class="grid-header">Vie</div><div class="grid-header">Sáb</div>
@@ -3116,6 +3232,245 @@
     };
 
     // ==========================================
+    // LÓGICA DEL GENERADOR DE HORARIOS (IA)
+    // ==========================================
+    
+    let generatedSchedules = []; // Aquí guardaremos los resultados
+    let currentGenIndex = 0;     // Para navegar entre opciones (1 de 5...)
+
+    // 1. Mostrar/Ocultar el Panel
+    window.toggleGenerator = function() {
+        const p = document.getElementById('generator-panel');
+        if(p) {
+            p.style.display = p.style.display === 'none' ? 'block' : 'none';
+            // Si está vacío, agregamos un curso automáticamente para que no se vea feo
+            const container = document.getElementById('gen-inputs-container');
+            if(p.style.display === 'block' && container.children.length === 0) {
+                addGenCourse();
+            }
+        }
+    };
+
+    // 2. Agregar Curso al Generador
+    window.addGenCourse = function() {
+        const container = document.getElementById('gen-inputs-container');
+        const id = Date.now() + Math.random().toString(36).substr(2, 5); // ID único
+        const div = document.createElement('div');
+        div.className = 'gen-course-box';
+        div.id = `gc-${id}`;
+        
+        div.innerHTML = `
+            <h4>
+                <input type="text" class="gc-name" placeholder="Nombre del Curso (Ej: Matemática)">
+                <button class="gen-del-btn" onclick="this.closest('.gen-course-box').remove()">×</button>
+            </h4>
+            <div class="gc-sections"></div>
+            <button onclick="addGenSection('${id}')" style="font-size:0.8rem; margin-top:5px; cursor:pointer; background:#eee; border:none; padding:5px; border-radius:4px;">+ Agregar Opción de Horario</button>
+        `;
+        container.appendChild(div);
+        
+        // Agregamos la primera opción automáticamente
+        addGenSection(id);
+    };
+
+    // 3. Agregar Sección (Opción de Horario)
+    window.addGenSection = function(courseId) {
+        const box = document.querySelector(`#gc-${courseId} .gc-sections`);
+        if(!box) return;
+        
+        const row = document.createElement('div');
+        row.className = 'gen-section-row';
+        row.innerHTML = `
+            <select class="gs-day" style="padding:5px; border-radius:4px; border:1px solid #ccc;">
+                <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
+                <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option>
+            </select>
+            <input type="time" class="gs-start" value="08:00" style="padding:5px; border-radius:4px; border:1px solid #ccc;"> a 
+            <input type="time" class="gs-end" value="10:00" style="padding:5px; border-radius:4px; border:1px solid #ccc;">
+            <button class="gen-del-btn" onclick="this.parentElement.remove()" title="Borrar esta opción">×</button>
+        `;
+        box.appendChild(row);
+    };
+
+    // 4. EL ALGORITMO INTELIGENTE (Backtracking)
+    window.runGenerator = function() {
+        // A. Recopilar Datos del HTML
+        const inputs = [];
+        const courseBoxes = document.querySelectorAll('.gen-course-box');
+        
+        courseBoxes.forEach(box => {
+            const name = box.querySelector('.gc-name').value.trim() || "Curso Sin Nombre";
+            const sections = [];
+            
+            // Leemos cada fila de horario
+            box.querySelectorAll('.gen-section-row').forEach(row => {
+                sections.push({
+                    day: parseInt(row.querySelector('.gs-day').value),
+                    start: timeToFloatGen(row.querySelector('.gs-start').value),
+                    end: timeToFloatGen(row.querySelector('.gs-end').value)
+                });
+            });
+            
+            // Solo agregamos cursos que tengan al menos una opción válida
+            if(sections.length > 0) {
+                inputs.push({ name: name, options: sections });
+            }
+        });
+
+        if(inputs.length === 0) return alert("Por favor agrega cursos y horarios primero.");
+
+        // B. Algoritmo Recursivo para buscar combinaciones
+        generatedSchedules = [];
+        
+        function findCombinations(courseIdx, currentSchedule) {
+            // Si ya revisamos todos los cursos, ¡encontramos una combinación válida!
+            if(courseIdx === inputs.length) {
+                generatedSchedules.push([...currentSchedule]); // Guardamos copia
+                return;
+            }
+
+            const currentCourse = inputs[courseIdx];
+
+            // Probamos cada opción de horario de este curso
+            for(let option of currentCourse.options) {
+                // Verificamos si choca con lo que ya llevamos agendado
+                const clash = currentSchedule.some(item => 
+                    item.day === option.day && (
+                        (option.start >= item.start && option.start < item.end) || // Empieza dentro
+                        (option.end > item.start && option.end <= item.end) ||     // Termina dentro
+                        (option.start <= item.start && option.end >= item.end)     // Envuelve
+                    )
+                );
+
+                if(!clash) {
+                    // Si no choca, lo agregamos temporalmente
+                    currentSchedule.push({
+                        courseName: currentCourse.name,
+                        day: option.day,
+                        start: option.start,
+                        end: option.end,
+                        color: getRandomColorGen() // Asignamos color al azar
+                    });
+
+                    // Recursividad: Vamos al siguiente curso
+                    findCombinations(courseIdx + 1, currentSchedule);
+
+                    // Backtracking: Lo quitamos para probar la siguiente opción del bucle
+                    currentSchedule.pop();
+                }
+            }
+        }
+
+        // Ejecutar algoritmo
+        findCombinations(0, []);
+
+        // C. Mostrar Resultados
+        const resultsArea = document.getElementById('gen-results-area');
+        if(generatedSchedules.length === 0) {
+            alert("⚠️ ¡Imposible! Todas las combinaciones tienen cruce de horarios. Intenta quitar algún curso o agregar más opciones.");
+            resultsArea.style.display = 'none';
+        } else {
+            currentGenIndex = 0;
+            resultsArea.style.display = 'block';
+            showGenPreview(); // Mostrar la primera opción
+            alert(`✅ ¡Éxito! Se encontraron ${generatedSchedules.length} combinaciones posibles.`);
+        }
+    };
+
+    // 5. Visualizar Horario (Miniatura)
+    function showGenPreview() {
+        const sched = generatedSchedules[currentGenIndex];
+        const grid = document.getElementById('gen-preview-grid');
+        grid.innerHTML = ''; // Limpiar
+
+        document.getElementById('gen-counter-display').innerText = `Opción ${currentGenIndex + 1} de ${generatedSchedules.length}`;
+
+        // Dibujar bloquecitos
+        sched.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'gen-mini-block';
+            div.style.background = item.color;
+            
+            // Cálculos para posicionar en la miniatura
+            // Ancho: 100% / 6 días = 16.6%
+            div.style.left = `${(item.day - 1) * 16.66}%`;
+            div.style.width = '16%';
+            
+            // Alto: Asumimos jornada de 7am a 10pm (15 horas)
+            // 300px altura total / 15 horas = 20px por hora
+            const startHour = 7; 
+            const pxPerHour = 20;
+            
+            const top = (item.start - startHour) * pxPerHour;
+            const height = (item.end - item.start) * pxPerHour;
+
+            div.style.top = `${Math.max(0, top)}px`;
+            div.style.height = `${Math.max(10, height)}px`;
+            
+            // Texto chiquito
+            div.innerHTML = `<b>${item.courseName.substring(0,10)}..</b><br>${formatTimeGen(item.start)}-${formatTimeGen(item.end)}`;
+            
+            grid.appendChild(div);
+        });
+    }
+
+    // 6. Botones Siguiente / Anterior
+    window.nextSchedule = function() {
+        if(currentGenIndex < generatedSchedules.length - 1) {
+            currentGenIndex++;
+            showGenPreview();
+        }
+    };
+    window.prevSchedule = function() {
+        if(currentGenIndex > 0) {
+            currentGenIndex--;
+            showGenPreview();
+        }
+    };
+
+    // 7. Aplicar al Horario Real
+    window.applyGeneratedSchedule = function() {
+        if(confirm("¿Usar este horario? Se reemplazará lo que tengas en el simulador principal.")) {
+            const selected = generatedSchedules[currentGenIndex];
+            
+            // Convertimos al formato que usa tu simulador principal
+            mySchedule = selected.map(item => ({
+                courseId: item.courseName, // Usamos nombre como ID temporal
+                day: item.day,
+                start: item.start,
+                end: item.end,
+                color: item.color
+            }));
+            
+            // Guardar y renderizar
+            localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule));
+            renderScheduleItems(); // Función del simulador principal
+            updateScheduleDropdowns(); 
+            
+            // Scroll hacia el horario grande
+            document.querySelector('.scheduler-container').scrollIntoView({behavior: 'smooth'});
+        }
+    };
+
+    // --- FUNCIONES AUXILIARES ---
+    function timeToFloatGen(timeStr) {
+        if(!timeStr) return 0;
+        const [h, m] = timeStr.split(':').map(Number);
+        return h + (m / 60);
+    }
+    
+    function formatTimeGen(floatTime) {
+        const h = Math.floor(floatTime);
+        const m = Math.round((floatTime - h) * 60);
+        return `${h}:${m < 10 ? '0'+m : m}`;
+    }
+
+    function getRandomColorGen() {
+        const colors = ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4db6ac','#81c784','#ffb74d','#a1887f'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
     // ==========================================
     window.showPage = showPage;
@@ -3167,6 +3522,15 @@
     window.saveDashboardSettings = saveDashboardSettings;
 
     window.logout = logout;
+
+    // EXPORTAR FUNCIONES DEL GENERADOR IA
+    window.toggleGenerator = toggleGenerator;
+    window.addGenCourse = addGenCourse;
+    window.addGenSection = addGenSection;
+    window.runGenerator = runGenerator;
+    window.nextSchedule = nextSchedule;
+    window.prevSchedule = prevSchedule;
+    window.applyGeneratedSchedule = applyGeneratedSchedule;
     
     // Iniciar la app
     // Aseguramos que el DOM esté listo antes de iniciar
