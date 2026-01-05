@@ -305,6 +305,54 @@
         }
 
         /*  ⬆️⬆️⬆️  fin del código ⬆️⬆️⬆️ */
+
+
+        /* ================================================== */
+        /*  AQUÍ EL CÓDIGO DEL PASO 1 (CSS NUEVO) 👇      */
+        /* ================================================== */
+        
+        /* ESTILOS DEL GENERADOR MEJORADO */
+        .gen-course-box { 
+            border: 1px solid #ddd; 
+            padding: 15px; 
+            border-radius: 8px; 
+            background: #fff; 
+            border-left: 5px solid var(--accent);
+            margin-bottom: 15px;
+        }
+        .gen-option-group {
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .gen-option-header {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .gen-session-row { 
+            display: flex; 
+            gap: 5px; 
+            align-items: center; 
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+        }
+        .gen-btn-small {
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background: #eee;
+        }
+        .gen-del-btn { color: #c0392b; cursor: pointer; border: none; background: none; font-weight: bold; }
+
     </style>
 </head>
 <body>
@@ -1021,6 +1069,8 @@
             .heatmap-panel, .ai-panel { height: 600px; }
             .hell-weeks-grid { grid-template-columns: repeat(2, 1fr); }
         }
+
+
     </style>
 
 <script type="module">
@@ -3232,226 +3282,274 @@
     };
 
     // ==========================================
-    // LÓGICA DEL GENERADOR DE HORARIOS (IA)
+    // GENERADOR DE HORARIOS V2 (CEREBRO MEJORADO)
     // ==========================================
     
-    let generatedSchedules = []; // Aquí guardaremos los resultados
-    let currentGenIndex = 0;     // Para navegar entre opciones (1 de 5...)
+    let generatedSchedules = []; 
+    let currentGenIndex = 0;
 
-    // 1. Mostrar/Ocultar el Panel
+    // 1. Mostrar/Ocultar Panel
     window.toggleGenerator = function() {
         const p = document.getElementById('generator-panel');
         if(p) {
             p.style.display = p.style.display === 'none' ? 'block' : 'none';
-            // Si está vacío, agregamos un curso automáticamente para que no se vea feo
             const container = document.getElementById('gen-inputs-container');
+            // Si está vacío, agregamos un curso automáticamente
             if(p.style.display === 'block' && container.children.length === 0) {
                 addGenCourse();
             }
         }
     };
 
-    // 2. Agregar Curso al Generador
+    // 2. Agregar CURSO (Caja Principal)
     window.addGenCourse = function() {
         const container = document.getElementById('gen-inputs-container');
-        const id = Date.now() + Math.random().toString(36).substr(2, 5); // ID único
+        const id = Date.now() + Math.random().toString(36).substr(2, 5);
         const div = document.createElement('div');
         div.className = 'gen-course-box';
         div.id = `gc-${id}`;
         
         div.innerHTML = `
             <h4>
-                <input type="text" class="gc-name" placeholder="Nombre del Curso (Ej: Matemática)">
-                <button class="gen-del-btn" onclick="this.closest('.gen-course-box').remove()">×</button>
+                <input type="text" class="gc-name" placeholder="Nombre del Curso (Ej: Física I)">
+                <button class="gen-del-btn" onclick="this.closest('.gen-course-box').remove()" style="font-size:1.2rem;">×</button>
             </h4>
-            <div class="gc-sections"></div>
-            <button onclick="addGenSection('${id}')" style="font-size:0.8rem; margin-top:5px; cursor:pointer; background:#eee; border:none; padding:5px; border-radius:4px;">+ Agregar Opción de Horario</button>
+            <div class="gc-options-container"></div>
+            <button class="gen-btn-small" onclick="addGenOptionGroup('${id}')" style="background:#e3f2fd; border-color:#2196f3; color:#0d47a1; width:100%; margin-top:5px;">
+                + Agregar Opción de Horario (Grupo)
+            </button>
         `;
         container.appendChild(div);
-        
-        // Agregamos la primera opción automáticamente
-        addGenSection(id);
+        addGenOptionGroup(id); // Agregar primera opción por defecto
     };
 
-    // 3. Agregar Sección (Opción de Horario)
-    window.addGenSection = function(courseId) {
-        const box = document.querySelector(`#gc-${courseId} .gc-sections`);
-        if(!box) return;
+    // 3. Agregar GRUPO DE OPCIÓN (Contenedor de Sesiones)
+    // Esto permite que una "Opción A" tenga Lun 8-10 Y Mie 10-12
+    window.addGenOptionGroup = function(courseId) {
+        const container = document.querySelector(`#gc-${courseId} .gc-options-container`);
+        const optId = Date.now() + Math.random().toString(36).substr(2, 5);
         
-        const row = document.createElement('div');
-        row.className = 'gen-section-row';
-        row.innerHTML = `
-            <select class="gs-day" style="padding:5px; border-radius:4px; border:1px solid #ccc;">
-                <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
-                <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option>
-            </select>
-            <input type="time" class="gs-start" value="08:00" style="padding:5px; border-radius:4px; border:1px solid #ccc;"> a 
-            <input type="time" class="gs-end" value="10:00" style="padding:5px; border-radius:4px; border:1px solid #ccc;">
-            <button class="gen-del-btn" onclick="this.parentElement.remove()" title="Borrar esta opción">×</button>
+        const count = container.children.length + 1;
+
+        const div = document.createElement('div');
+        div.className = 'gen-option-group';
+        div.id = `gopt-${optId}`;
+        
+        div.innerHTML = `
+            <div class="gen-option-header">
+                <span>Opción #${count}</span>
+                <button class="gen-del-btn" onclick="this.closest('.gen-option-group').remove()">Eliminar</button>
+            </div>
+            <div class="gopt-sessions"></div>
+            <button class="gen-btn-small" onclick="addGenSessionRow('${optId}')">+ Agregar Sesión (Ej: Práctica)</button>
         `;
-        box.appendChild(row);
+        container.appendChild(div);
+        addGenSessionRow(optId); // Agregar primera fila de hora
     };
 
-    // 4. EL ALGORITMO INTELIGENTE (Backtracking)
+    // 4. Agregar FILA DE HORA INDIVIDUAL
+    window.addGenSessionRow = function(optId) {
+        const container = document.querySelector(`#gopt-${optId} .gopt-sessions`);
+        const row = document.createElement('div');
+        row.className = 'gen-session-row';
+        row.innerHTML = `
+            <select class="gs-day" style="padding:3px; border-radius:4px; border:1px solid #ccc;">
+                <option value="1">Lun</option><option value="2">Mar</option><option value="3">Mié</option>
+                <option value="4">Jue</option><option value="5">Vie</option><option value="6">Sáb</option>
+            </select>
+            <input type="time" class="gs-start" value="08:00" style="padding:3px;"> a 
+            <input type="time" class="gs-end" value="10:00" style="padding:3px;">
+            <button class="gen-del-btn" onclick="this.parentElement.remove()">×</button>
+        `;
+        container.appendChild(row);
+    };
+
+    // 5. ALGORITMO INTELIGENTE (Backtracking con Mejor Esfuerzo)
     window.runGenerator = function() {
-        // A. Recopilar Datos del HTML
+        // A. RECOPILAR DATOS DEL HTML
         const inputs = [];
-        const courseBoxes = document.querySelectorAll('.gen-course-box');
-        
-        courseBoxes.forEach(box => {
-            const name = box.querySelector('.gc-name').value.trim() || "Curso Sin Nombre";
-            const sections = [];
+        document.querySelectorAll('.gen-course-box').forEach(box => {
+            const name = box.querySelector('.gc-name').value.trim() || "Curso";
+            const options = [];
             
-            // Leemos cada fila de horario
-            box.querySelectorAll('.gen-section-row').forEach(row => {
-                sections.push({
-                    day: parseInt(row.querySelector('.gs-day').value),
-                    start: timeToFloatGen(row.querySelector('.gs-start').value),
-                    end: timeToFloatGen(row.querySelector('.gs-end').value)
+            // Recorrer Grupos de Opciones
+            box.querySelectorAll('.gen-option-group').forEach(grp => {
+                const sessions = [];
+                // Recorrer Sesiones dentro del grupo
+                grp.querySelectorAll('.gen-session-row').forEach(row => {
+                    sessions.push({
+                        day: parseInt(row.querySelector('.gs-day').value),
+                        start: timeToFloatGen(row.querySelector('.gs-start').value),
+                        end: timeToFloatGen(row.querySelector('.gs-end').value)
+                    });
                 });
+                if(sessions.length > 0) options.push(sessions);
             });
-            
-            // Solo agregamos cursos que tengan al menos una opción válida
-            if(sections.length > 0) {
-                inputs.push({ name: name, options: sections });
-            }
+
+            if(options.length > 0) inputs.push({ name, options });
         });
 
-        if(inputs.length === 0) return alert("Por favor agrega cursos y horarios primero.");
+        if(inputs.length === 0) return alert("Agrega cursos y horarios primero.");
 
-        // B. Algoritmo Recursivo para buscar combinaciones
+        // B. BUSCAR COMBINACIONES
         generatedSchedules = [];
-        
-        function findCombinations(courseIdx, currentSchedule) {
-            // Si ya revisamos todos los cursos, ¡encontramos una combinación válida!
+        let maxCoursesFit = 0; // Récord de cursos encajados
+
+        function findBestCombinations(courseIdx, currentSchedule) {
+            // Fin de la recursión (probamos todos los cursos)
             if(courseIdx === inputs.length) {
-                generatedSchedules.push([...currentSchedule]); // Guardamos copia
+                if(currentSchedule.length > 0) {
+                    // Si esta combinación mete MÁS cursos que el récord anterior, es la nueva ganadora
+                    if(currentSchedule.length > maxCoursesFit) {
+                        maxCoursesFit = currentSchedule.length;
+                        generatedSchedules = []; 
+                        generatedSchedules.push([...currentSchedule]);
+                    } 
+                    // Si empata con el récord, la agregamos a la lista
+                    else if (currentSchedule.length === maxCoursesFit) {
+                        generatedSchedules.push([...currentSchedule]);
+                    }
+                }
                 return;
             }
 
-            const currentCourse = inputs[courseIdx];
-
-            // Probamos cada opción de horario de este curso
-            for(let option of currentCourse.options) {
-                // Verificamos si choca con lo que ya llevamos agendado
-                const clash = currentSchedule.some(item => 
-                    item.day === option.day && (
-                        (option.start >= item.start && option.start < item.end) || // Empieza dentro
-                        (option.end > item.start && option.end <= item.end) ||     // Termina dentro
-                        (option.start <= item.start && option.end >= item.end)     // Envuelve
-                    )
-                );
+            const course = inputs[courseIdx];
+            
+            // INTENTO 1: Tratar de incluir este curso (probando sus opciones)
+            for(let optionSessions of course.options) {
+                // Verificar si TODAS las sesiones de esta opción encajan
+                let clash = false;
+                for(let session of optionSessions) {
+                    // Verificar choque con todo lo que ya agendamos
+                    for(let scheduledItem of currentSchedule) {
+                        for(let schedSession of scheduledItem.sessions) {
+                             if(session.day === schedSession.day && (
+                                (session.start >= schedSession.start && session.start < schedSession.end) ||
+                                (session.end > schedSession.start && session.end <= schedSession.end) ||
+                                (session.start <= schedSession.start && session.end >= schedSession.end)
+                            )) {
+                                clash = true; break;
+                            }
+                        }
+                        if(clash) break;
+                    }
+                    if(clash) break;
+                }
 
                 if(!clash) {
-                    // Si no choca, lo agregamos temporalmente
+                    // Si no choca, lo agregamos
                     currentSchedule.push({
-                        courseName: currentCourse.name,
-                        day: option.day,
-                        start: option.start,
-                        end: option.end,
-                        color: getRandomColorGen() // Asignamos color al azar
+                        courseName: course.name,
+                        sessions: optionSessions, 
+                        color: getRandomColorGen()
                     });
-
-                    // Recursividad: Vamos al siguiente curso
-                    findCombinations(courseIdx + 1, currentSchedule);
-
-                    // Backtracking: Lo quitamos para probar la siguiente opción del bucle
+                    
+                    findBestCombinations(courseIdx + 1, currentSchedule);
+                    
+                    // Backtracking (lo quitamos para probar la siguiente opción)
                     currentSchedule.pop();
                 }
             }
+
+            // INTENTO 2: SALTAR este curso (Para encontrar resultados parciales si no cabe)
+            findBestCombinations(courseIdx + 1, currentSchedule);
         }
 
-        // Ejecutar algoritmo
-        findCombinations(0, []);
+        findBestCombinations(0, []);
 
-        // C. Mostrar Resultados
+        // C. MOSTRAR RESULTADOS
         const resultsArea = document.getElementById('gen-results-area');
+        
+        // Ordenar resultados por cantidad de cursos (mayor a menor)
+        generatedSchedules.sort((a,b) => b.length - a.length);
+        
+        // Eliminar duplicados exactos (limpieza)
+        const uniqueSchedules = [];
+        const seenStrings = new Set();
+        generatedSchedules.forEach(sched => {
+            const str = JSON.stringify(sched.map(s => s.courseName + JSON.stringify(s.sessions)));
+            if(!seenStrings.has(str)) {
+                seenStrings.add(str);
+                uniqueSchedules.push(sched);
+            }
+        });
+        generatedSchedules = uniqueSchedules;
+
         if(generatedSchedules.length === 0) {
-            alert("⚠️ ¡Imposible! Todas las combinaciones tienen cruce de horarios. Intenta quitar algún curso o agregar más opciones.");
+            alert("No se pudo generar ningún horario válido.");
             resultsArea.style.display = 'none';
         } else {
+            const totalCursos = inputs.length;
+            const logrados = generatedSchedules[0].length;
+            
+            if(logrados < totalCursos) {
+                alert(`⚠️ CRUCE DETECTADO: No entran los ${totalCursos} cursos.\n\n💡 Pero encontré ${generatedSchedules.length} opciones llevando ${logrados} cursos.`);
+            } else {
+                alert(`✅ ¡Perfecto! Se encontraron ${generatedSchedules.length} opciones completas.`);
+            }
+
             currentGenIndex = 0;
             resultsArea.style.display = 'block';
-            showGenPreview(); // Mostrar la primera opción
-            alert(`✅ ¡Éxito! Se encontraron ${generatedSchedules.length} combinaciones posibles.`);
+            showGenPreview();
         }
     };
 
-    // 5. Visualizar Horario (Miniatura)
+    // 6. VISUALIZAR PREVIEW
     function showGenPreview() {
         const sched = generatedSchedules[currentGenIndex];
         const grid = document.getElementById('gen-preview-grid');
-        grid.innerHTML = ''; // Limpiar
+        grid.innerHTML = ''; 
 
-        document.getElementById('gen-counter-display').innerText = `Opción ${currentGenIndex + 1} de ${generatedSchedules.length}`;
-
-        // Dibujar bloquecitos
+        const courseCount = sched.length;
+        document.getElementById('gen-counter-display').innerText = `Opción ${currentGenIndex + 1} de ${generatedSchedules.length} (${courseCount} cursos)`;
+        
         sched.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'gen-mini-block';
-            div.style.background = item.color;
-            
-            // Cálculos para posicionar en la miniatura
-            // Ancho: 100% / 6 días = 16.6%
-            div.style.left = `${(item.day - 1) * 16.66}%`;
-            div.style.width = '16%';
-            
-            // Alto: Asumimos jornada de 7am a 10pm (15 horas)
-            // 300px altura total / 15 horas = 20px por hora
-            const startHour = 7; 
-            const pxPerHour = 20;
-            
-            const top = (item.start - startHour) * pxPerHour;
-            const height = (item.end - item.start) * pxPerHour;
+            item.sessions.forEach(sess => {
+                const div = document.createElement('div');
+                div.className = 'gen-mini-block';
+                div.style.background = item.color;
+                
+                div.style.left = `${(sess.day - 1) * 16.66}%`;
+                div.style.width = '16%';
+                
+                const startHour = 7; const pxPerHour = 20;
+                const top = (sess.start - startHour) * pxPerHour;
+                const height = (sess.end - sess.start) * pxPerHour;
 
-            div.style.top = `${Math.max(0, top)}px`;
-            div.style.height = `${Math.max(10, height)}px`;
-            
-            // Texto chiquito
-            div.innerHTML = `<b>${item.courseName.substring(0,10)}..</b><br>${formatTimeGen(item.start)}-${formatTimeGen(item.end)}`;
-            
-            grid.appendChild(div);
+                div.style.top = `${Math.max(0, top)}px`;
+                div.style.height = `${Math.max(10, height)}px`;
+                div.innerHTML = `<b>${item.courseName.substring(0,8)}..</b><br>${formatTimeGen(sess.start)}`;
+                
+                grid.appendChild(div);
+            });
         });
     }
 
-    // 6. Botones Siguiente / Anterior
-    window.nextSchedule = function() {
-        if(currentGenIndex < generatedSchedules.length - 1) {
-            currentGenIndex++;
-            showGenPreview();
-        }
-    };
-    window.prevSchedule = function() {
-        if(currentGenIndex > 0) {
-            currentGenIndex--;
-            showGenPreview();
-        }
-    };
-
-    // 7. Aplicar al Horario Real
+    // 7. APLICAR AL HORARIO REAL
     window.applyGeneratedSchedule = function() {
-        if(confirm("¿Usar este horario? Se reemplazará lo que tengas en el simulador principal.")) {
+        if(confirm("¿Usar este horario?")) {
             const selected = generatedSchedules[currentGenIndex];
+            mySchedule = [];
             
-            // Convertimos al formato que usa tu simulador principal
-            mySchedule = selected.map(item => ({
-                courseId: item.courseName, // Usamos nombre como ID temporal
-                day: item.day,
-                start: item.start,
-                end: item.end,
-                color: item.color
-            }));
+            selected.forEach(item => {
+                item.sessions.forEach(sess => {
+                    mySchedule.push({
+                        courseId: item.courseName, // Nombre como ID temporal
+                        day: sess.day,
+                        start: sess.start,
+                        end: sess.end,
+                        color: item.color
+                    });
+                });
+            });
             
-            // Guardar y renderizar
             localStorage.setItem('unmsm_adm_v11_h', JSON.stringify(mySchedule));
-            renderScheduleItems(); // Función del simulador principal
+            renderScheduleItems(); 
             updateScheduleDropdowns(); 
-            
-            // Scroll hacia el horario grande
             document.querySelector('.scheduler-container').scrollIntoView({behavior: 'smooth'});
         }
     };
-
+    
     // --- FUNCIONES AUXILIARES ---
     function timeToFloatGen(timeStr) {
         if(!timeStr) return 0;
@@ -3466,9 +3564,10 @@
     }
 
     function getRandomColorGen() {
-        const colors = ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4db6ac','#81c784','#ffb74d','#a1887f'];
+        const colors = ['#e57373','#f06292','#ba68c8','#9575cd','#7986cb','#64b5f6','#4db6ac','#81c784','#ffb74d'];
         return colors[Math.floor(Math.random() * colors.length)];
     }
+
 
     // ==========================================
     // EXPORTAR FUNCIONES AL HTML (NECESARIO PARA MODULE)
@@ -3492,48 +3591,48 @@
     window.handleChatEnter = handleChatEnter;
     window.askAI = askAI;
     
-    // Gestión de Mallas
+    // Gestión de Mallas y Carga de Datos
     window.restoreAdminMalla = restoreAdminMalla;
     window.importCustomMalla = importCustomMalla;
-    window.copyExportJson = copyExportJson; // Agregué esta que faltaba exportar
-    // window.exportCurrentMalla = exportCurrentMalla; <--- ESTA LINEA ERA EL ERROR (BORRADA)
+    window.copyExportJson = copyExportJson; 
+    window.renderComunidad = renderComunidad;
+    window.loadCloudMalla = loadCloudMalla;
+    window.deleteCloudMalla = deleteCloudMalla;
 
-    // Builder
+    // Funciones de la pestaña "Cargar Datos" (Las de texto)
+    window.fillJsonWithCurrent = fillJsonWithCurrent;
+    window.publishToCommunity = publishToCommunity;
+    window.loadFromTextArea = loadFromTextArea;
+
+    // Builder (Constructor)
     window.initBuilder = initBuilder;
     window.addBuilderCycle = addBuilderCycle;
     window.addBuilderCourse = addBuilderCourse;
     window.saveBuilderMalla = saveBuilderMalla;
     window.updateAllBuilderDropdowns = updateAllBuilderDropdowns;
-    
-    // Comunidad
-    // window.loadRepoMalla = loadRepoMalla; // <--- ESTA LINEA SE BORRA PORQUE YA NO EXISTE
-    window.renderComunidad = renderComunidad;
-    
-    window.loadCloudMalla = loadCloudMalla;
+    window.populateBuilderFromMemory = populateBuilderFromMemory; // <--- Importante para editar carrera
 
-    // Gestión de Áreas (Agregué estas por si acaso las necesitas en los botones HTML)
+    // Gestión de Áreas
     window.addNewArea = addNewArea;
     window.resetAreas = resetAreas;
     window.removeCustomArea = removeCustomArea;
 
-    window.deleteCloudMalla = deleteCloudMalla;
-    // -----------------------------------------------
+    // Progreso y Salida
     window.toggleGoalsEdit = toggleGoalsEdit;
     window.saveDashboardSettings = saveDashboardSettings;
-
     window.logout = logout;
 
-    // EXPORTAR FUNCIONES DEL GENERADOR IA
+    // --- NUEVAS FUNCIONES DEL GENERADOR IA (V2) ---
     window.toggleGenerator = toggleGenerator;
     window.addGenCourse = addGenCourse;
-    window.addGenSection = addGenSection;
+    window.addGenOptionGroup = addGenOptionGroup; // <--- NUEVA
+    window.addGenSessionRow = addGenSessionRow;   // <--- NUEVA
     window.runGenerator = runGenerator;
     window.nextSchedule = nextSchedule;
     window.prevSchedule = prevSchedule;
     window.applyGeneratedSchedule = applyGeneratedSchedule;
     
     // Iniciar la app
-    // Aseguramos que el DOM esté listo antes de iniciar
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
