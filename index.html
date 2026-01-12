@@ -574,43 +574,73 @@
         </div>
     </div>
 
-    <!-- PÁGINA 4: SKILLS DASHBOARD (CORREGIDO) -->
+    <!-- PÁGINA 4: SKILLS DASHBOARD (DINÁMICO Y UNIVERSAL) -->
     <div id="page-skills" class="page-section">
-        <h2 style="text-align:center; margin-bottom:20px;">Perfil Profesional (Skills)</h2>
-        <div class="profile-dashboard">
-            <!-- Finanzas -->
-            <div class="profile-card">
-                <div class="profile-title" style="color:var(--c-fin)"><span class="material-icons">attach_money</span> Finanzas</div>
-                <div class="profile-percent" id="pct-fin">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-fin" style="background:var(--c-fin)"></div></div>
+        <!-- Encabezado con botón de configuración -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; text-align:center;">Perfil Profesional & Competencias</h2>
+            <button onclick="toggleSkillConfig()" class="btn-export" style="width:auto; margin:0; background:var(--text-main);">
+                <span class="material-icons">settings</span> Configurar Skills
+            </button>
+        </div>
+
+        <!-- PANEL DE CONFIGURACIÓN (OCULTO POR DEFECTO) -->
+        <div id="skills-config-panel" style="display:none; background:#fff; padding:20px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:25px; border-left:5px solid var(--accent);">
+            <h3 style="margin-top:0;">🛠️ Gestor de Habilidades</h3>
+            <p style="font-size:0.9rem; color:#666;">Agrega las herramientas técnicas de TU carrera y asígnales un peso según qué tanto impactan en tus especialidades.</p>
+
+            <!-- FORMULARIO MANUAL -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; align-items:end;">
+                <div>
+                    <label class="form-label">Nombre de la Habilidad:</label>
+                    <input type="text" id="new-skill-name" class="form-select" placeholder="Ej: Autocad, Suturas, Java...">
+                </div>
+                <div>
+                    <label class="form-label">Impacta en el Área:</label>
+                    <select id="new-skill-area" class="form-select">
+                        <!-- SE LLENA CON JS BASADO EN TUS AREAS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Nivel de Impacto:</label>
+                    <select id="new-skill-weight" class="form-select">
+                        <option value="1">Bajo (1 pt)</option>
+                        <option value="2">Medio (2 pts)</option>
+                        <option value="3">Alto (3 pts)</option>
+                    </select>
+                </div>
+                <button onclick="addNewSkill()" class="btn-add" style="height:42px;">+ AGREGAR</button>
             </div>
-            <!-- Marketing -->
-            <div class="profile-card">
-                <div class="profile-title" style="color:var(--c-mkt)"><span class="material-icons">campaign</span> Marketing</div>
-                <div class="profile-percent" id="pct-mkt">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-mkt" style="background:var(--c-mkt)"></div></div>
+
+            <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+
+            <!-- ZONA INTELIGENTE (IA) -->
+            <div style="background:#e3f2fd; padding:15px; border-radius:8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <strong style="color:#1565c0;"><span class="material-icons" style="vertical-align:middle">psychology</span> Asistente IA</strong>
+                    <span style="font-size:0.85rem; color:#555; display:block;">¿Sin ideas? La IA leerá tus áreas y sugerirá 5 skills clave.</span>
+                </div>
+                <button onclick="suggestSkillsWithAI()" class="btn-calc-action" style="background:#1565c0; margin:0;">
+                    ✨ Sugerir Skills Automáticamente
+                </button>
             </div>
-            <!-- RRHH -->
-            <div class="profile-card">
-                <div class="profile-title" style="color:var(--c-rrhh)"><span class="material-icons">groups</span> RRHH</div>
-                <div class="profile-percent" id="pct-rrhh">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-rrhh" style="background:var(--c-rrhh)"></div></div>
-            </div>
-            <!-- Ops -->
-            <div class="profile-card">
-                <div class="profile-title" style="color:var(--c-op)"><span class="material-icons">settings</span> Proyectos</div>
-                <div class="profile-percent" id="pct-op">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-op" style="background:var(--c-op)"></div></div>
-            </div>
-            <!-- Logística (Nueva) -->
-            <div class="profile-card">
-                <div class="profile-title" style="color:#795548"><span class="material-icons">local_shipping</span> Logística</div>
-                <div class="profile-percent" id="pct-log">0%</div>
-                <div class="profile-bar-bg"><div class="profile-bar-fill" id="bar-log" style="background:#795548"></div></div>
+            
+            <div style="margin-top:15px; text-align:right;">
+                 <button onclick="resetSkillsDB()" style="color:#c0392b; background:none; border:none; text-decoration:underline; cursor:pointer;">⚠️ Borrar todo y empezar de cero</button>
             </div>
         </div>
+
+        <!-- DASHBOARD DE BARRAS (SE LLENA SOLO CON JAVASCRIPT) -->
+        <div id="dynamic-profile-dashboard" class="profile-dashboard">
+            <!-- AQUÍ SE INYECTAN LAS BARRAS AUTOMÁTICAMENTE -->
+        </div>
+
         <h3 style="margin-bottom:15px; color:#555;">Marcar Herramientas Dominadas:</h3>
-        <div class="tools-container" id="tools-grid"></div>
+        
+        <!-- CHIPS DE SKILLS (SE LLENA SOLO CON JAVASCRIPT) -->
+        <div class="tools-container" id="tools-grid">
+            <!-- AQUÍ SE INYECTAN LOS BOTONES AUTOMÁTICAMENTE -->
+        </div>
     </div>
 
     <!-- PÁGINA 5: SIMULADOR HORARIO -->
@@ -1246,6 +1276,9 @@
     // =========================================================
     let customAreas = []; 
 
+    // NUEVA BASE DE DATOS DE SKILLS (DINÁMICA)
+    let globalSkillsDB = [];
+
     function initCustomAreas() {
         const stored = localStorage.getItem('lumin_custom_areas');
         if(stored) {
@@ -1335,45 +1368,7 @@
     };
 
     // 4. DATABASE DE SKILLS
-    const skillsDB = [
-        { id: 'excel_adv', name: 'Excel Avanzado (Macros)', weights: { fin: 3, op: 3, mkt: 2, rrhh: 2, log: 3 } },
-        { id: 'power_bi', name: 'Power BI / Tableau', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2, log: 3 } },
-        { id: 'sql', name: 'SQL para Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 1, log: 2 } },
-        { id: 'python', name: 'Python (Analítica)', weights: { fin: 3, op: 2, mkt: 2, rrhh: 1 } },
-        { id: 'ingles', name: 'Inglés de Negocios', weights: { fin: 2, op: 3, mkt: 2, rrhh: 2 , log: 1 } },
-        { id: 'mat_fin', name: 'Matemática Financiera', weights: { fin: 3, op: 1 } },
-        { id: 'estados_fin', name: 'Análisis Estados Fin.', weights: { fin: 3, op: 1 } },
-        { id: 'bolsa', name: 'Bolsa de Valores', weights: { fin: 3 } },
-        { id: 'econometria', name: 'Econometría', weights: { fin: 3, mkt: 1 } },
-        { id: 'sap_fi', name: 'SAP FI/CO', weights: { fin: 3, op: 1 } },
-        { id: 'riesgos', name: 'Gestión de Riesgos', weights: { fin: 3, op: 2 , log:2} },
-        { id: 'bloomberg', name: 'Bloomberg Terminal', weights: { fin: 3 } },
-        { id: 'fintech', name: 'Fintech & Blockchain', weights: { fin: 2, mkt: 1 } },
-        { id: 'inv_merc', name: 'Investigación Mercados', weights: { mkt: 3, log: 1 } },
-        { id: 'seo_sem', name: 'SEO/SEM (Google Ads)', weights: { mkt: 3 } },
-        { id: 'branding', name: 'Branding', weights: { mkt: 3 } },
-        { id: 'analytics', name: 'Google Analytics 4', weights: { mkt: 3, op: 1 } },
-        { id: 'crm', name: 'CRM (Salesforce/HubSpot)', weights: { mkt: 3, op: 1, fin: 1 } },
-        { id: 'neuromkt', name: 'Neuromarketing', weights: { mkt: 3 } },
-        { id: 'design', name: 'Design Thinking', weights: { mkt: 2, op: 2, rrhh: 1 } },
-        { id: 'social_ads', name: 'Facebook/Meta Ads', weights: { mkt: 3 } },
-        { id: 'seleccion', name: 'Selección y Reclutamiento', weights: { rrhh: 3 } },
-        { id: 'legislacion', name: 'Legislación Laboral', weights: { rrhh: 3, op: 1 } },
-        { id: 'clima', name: 'Clima y Cultura Org.', weights: { rrhh: 3 } },
-        { id: 'capacitacion', name: 'Capacitación', weights: { rrhh: 3 } },
-        { id: 'planillas', name: 'Planillas (PLAME)', weights: { rrhh: 3, fin: 1 } },
-        { id: 'linkedin', name: 'LinkedIn Recruiter', weights: { rrhh: 3 } },
-        { id: 'sst', name: 'Seguridad y Salud (SST)', weights: { rrhh: 3, op: 2 } },
-        { id: 'people_analytics', name: 'People Analytics', weights: { rrhh: 3, op: 1 } },
-        { id: 'supply', name: 'Supply Chain Mgmt', weights: { op: 3, log: 3 } },
-        { id: 'bpm', name: 'Procesos BPM (Bizagi)', weights: { op: 3, log: 2 } },
-        { id: 'planeamiento', name: 'Planeamiento Estratégico', weights: { op: 3, fin: 1, mkt: 1, rrhh: 1 } },
-        { id: 'gestion_pub', name: 'Gestión Pública (SIAF)', weights: { op: 3, log: 1 } },
-        { id: 'pmi', name: 'Gestión Proyectos (PMI)', weights: { op: 3, fin: 1 } },
-        { id: 'sap_mm', name: 'SAP MM/SD', weights: { op: 3, log: 3 } },
-        { id: 'logistica', name: 'Logística Internacional', weights: { op: 2, log: 3 } },
-        { id: 'six_sigma', name: 'Lean Six Sigma', weights: { op: 3, log: 2 } }
-    ];
+    
 
     let approved = new Set();
     let approvedGrades = {}; 
@@ -1483,18 +1478,19 @@
         // Tema oscuro
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         
+        loadHellEvents(); 
+        renderHellGrid(); 
 
-        loadHellEvents(); // <--- AGREGAR ESTA LÍNEA para que cargue al abrir la página
-        renderHellGrid(); // <--- AGREGAR ESTA LÍNEA para que dibuje los cuadritos
-
-        // --- LO NUEVO: Cargar Áreas Personalizadas ---
+        // --- Cargar Áreas Personalizadas ---
         initCustomAreas(); 
         
         // Renderizar componentes
         renderMalla();
-        renderSkills();
-        
-        // renderKanban(); // <--- OJO: Lo dejé comentado. Si tienes esa función creada, quítale las // del inicio.
+
+        // --- CAMBIO AQUÍ: ---
+        // renderSkills();  <-- ESTA LA BORRAMOS (es la vieja)
+        initSkills();       // <-- ESTA LA AGREGAMOS (es la nueva dinámica)
+        // --------------------
         
         initSchedule();
         initCalculator();
@@ -1502,7 +1498,6 @@
         
         // Iniciar constructor
         initBuilder();
-        
     }
     window.showPage = function(id) {
         // 1. Ocultar todas las secciones y desactivar botones
@@ -2077,46 +2072,286 @@
         document.getElementById('res-current-avg').innerText = '0.00'; document.getElementById('res-analysis').innerText = '...';
     }
 
-    // ================= SKILLS =================
-    function renderSkills() {
-        const grid = document.getElementById('tools-grid'); grid.innerHTML = '';
-        skillsDB.sort((a,b) => a.name.localeCompare(b.name));
-        skillsDB.forEach(skill => {
-            const isChecked = acquiredSkills.has(skill.id);
-            const chip = document.createElement('div'); chip.className = `tool-chip ${isChecked ? 'active' : ''}`;
-            chip.onclick = () => {
-                if(acquiredSkills.has(skill.id)) acquiredSkills.delete(skill.id); else acquiredSkills.add(skill.id);
-                localStorage.setItem('unmsm_adm_v11_s', JSON.stringify([...acquiredSkills])); renderSkills();
-            };
-            chip.innerHTML = `<div class="tool-check">${isChecked ? '✓' : ''}</div><span>${skill.name}</span>`;
-            grid.appendChild(chip);
-        });
-        calculateProfiles();
+
+
+    // ==========================================
+    // NUEVA LÓGICA DE SKILLS (UNIVERSAL Y DINÁMICA)
+    // ==========================================
+
+    // 1. INICIALIZAR SKILLS (Llamar en init())
+function initSkills() {
+    // Cargar DB personalizada o usar vacía
+    const storedDB = localStorage.getItem('lumin_skills_db');
+    if (storedDB) {
+        globalSkillsDB = JSON.parse(storedDB);
+    } else {
+        // SI ES NUEVO, CARGAMOS UNOS POCOS EJEMPLOS GENÉRICOS
+        // Usamos 'all' para que sumen a cualquier carrera
+        globalSkillsDB = [
+            { id: 'idioma_ing', name: 'Inglés Profesional', weights: { 'all': 2 } },
+            { id: 'ofimatica', name: 'Ofimática / Herramientas Digitales', weights: { 'all': 1 } },
+            { id: 'liderazgo', name: 'Liderazgo y Comunicación', weights: { 'all': 3 } }
+        ];
     }
-    function calculateProfiles() {
-        // Agregamos 'log' a los contadores
-        const sc = {fin:0, mkt:0, rrhh:0, op:0, log:0}; 
-        const mx = {fin:0, mkt:0, rrhh:0, op:0, log:0};
+    renderSkillsUI();
+}
+
+// 2. ABRIR/CERRAR EL PANEL DE CONFIGURACIÓN
+window.toggleSkillConfig = function() {
+    const p = document.getElementById('skills-config-panel');
+    const isHidden = p.style.display === 'none';
+    p.style.display = isHidden ? 'block' : 'none';
+    
+    if(isHidden) {
+        // Llenar el dropdown de áreas con las áreas que el alumno definió
+        const select = document.getElementById('new-skill-area');
+        select.innerHTML = '';
         
-        skillsDB.forEach(s => {
-            // Recorremos incluyendo 'log'
-            ['fin','mkt','rrhh','op','log'].forEach(k => { 
-                if(s.weights[k]) { 
-                    mx[k]+=s.weights[k]; 
-                    if(acquiredSkills.has(s.id)) sc[k]+=s.weights[k]; 
-                }
+        if(typeof customAreas === 'undefined' || customAreas.length === 0) {
+            select.innerHTML = '<option value="">⚠ Primero define tus Áreas en "Mi Carrera"</option>';
+        } else {
+            customAreas.forEach(area => {
+                const opt = document.createElement('option');
+                opt.value = area.id;
+                opt.text = area.name;
+                select.add(opt);
             });
+            // Opción "Todas"
+            const optAll = document.createElement('option');
+            optAll.value = 'all';
+            optAll.text = 'General (Impacta a todas)';
+            select.add(optAll);
+        }
+    }
+};
+
+// 3. AGREGAR SKILL MANUALMENTE
+window.addNewSkill = function() {
+    const name = document.getElementById('new-skill-name').value.trim();
+    const areaId = document.getElementById('new-skill-area').value;
+    const weight = parseInt(document.getElementById('new-skill-weight').value);
+    
+    if(!name) return alert("Escribe un nombre para la habilidad.");
+    if(!areaId) return alert("Selecciona un área válida.");
+
+    // Generar ID único
+    const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(Math.random()*1000);
+
+    // Buscar si ya existe la habilidad para solo agregarle peso a otra área
+    const existing = globalSkillsDB.find(s => s.name.toLowerCase() === name.toLowerCase());
+    
+    if(existing) {
+        existing.weights[areaId] = weight;
+        alert(`Se actualizó la habilidad "${name}" agregando impacto en esta área.`);
+    } else {
+        const newSkill = {
+            id: id,
+            name: name,
+            weights: {}
+        };
+        newSkill.weights[areaId] = weight;
+        globalSkillsDB.push(newSkill);
+    }
+
+    saveSkillsDB();
+    renderSkillsUI();
+    document.getElementById('new-skill-name').value = ''; // Limpiar input
+};
+
+// 4. GUARDAR EN LOCALSTORAGE
+function saveSkillsDB() {
+    localStorage.setItem('lumin_skills_db', JSON.stringify(globalSkillsDB));
+}
+
+// 5. RENDERIZAR TODO (BARRAS Y CHIPS)
+function renderSkillsUI() {
+    // A. RENDERIZAR LAS BARRAS DE PROGRESO (LAS ÁREAS)
+    const dashboard = document.getElementById('dynamic-profile-dashboard');
+    if(!dashboard) return;
+    dashboard.innerHTML = '';
+
+    // Si no hay áreas definidas, mostrar mensaje
+    if(typeof customAreas === 'undefined' || customAreas.length === 0) {
+        dashboard.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:#777;">Ve a la pestaña <b>"Mi Carrera"</b> y define tus Áreas/Especialidades para ver tu progreso aquí.</div>`;
+        return;
+    }
+
+    // Calcular puntajes dinámicamente
+    const scores = {}; // Puntos obtenidos
+    const maxScores = {}; // Puntos posibles total
+    
+    // Inicializar contadores por área
+    customAreas.forEach(a => { scores[a.id] = 0; maxScores[a.id] = 0; });
+
+    // Recorrer Skills
+    globalSkillsDB.forEach(skill => {
+        const isAcquired = acquiredSkills.has(skill.id);
+        
+        // Iterar sobre los pesos de esta skill
+        for (const [areaId, weight] of Object.entries(skill.weights)) {
+            if(areaId === 'all') {
+                // Si es 'all', suma a todas las áreas
+                customAreas.forEach(a => {
+                    maxScores[a.id] += weight;
+                    if(isAcquired) scores[a.id] += weight;
+                });
+            } else if(maxScores[areaId] !== undefined) {
+                // Si es un área específica
+                maxScores[areaId] += weight;
+                if(isAcquired) scores[areaId] += weight;
+            }
+        }
+    });
+
+    // Dibujar Tarjetas
+    customAreas.forEach(area => {
+        const max = maxScores[area.id] || 1; // Evitar división por cero
+        const current = scores[area.id] || 0;
+        const pct = Math.round((current / max) * 100);
+
+        const card = document.createElement('div');
+        card.className = 'profile-card';
+        card.innerHTML = `
+            <div class="profile-title" style="color:${area.color}">
+                <span class="material-icons">verified</span> ${area.name}
+            </div>
+            <div class="profile-percent">${pct}%</div>
+            <div class="profile-bar-bg">
+                <div class="profile-bar-fill" style="width:${pct}%; background:${area.color}"></div>
+            </div>
+        `;
+        dashboard.appendChild(card);
+    });
+
+    // B. RENDERIZAR LOS CHIPS (BOTONES)
+    const grid = document.getElementById('tools-grid');
+    grid.innerHTML = '';
+    
+    // Ordenar alfabéticamente
+    globalSkillsDB.sort((a,b) => a.name.localeCompare(b.name));
+
+    globalSkillsDB.forEach(skill => {
+        const isChecked = acquiredSkills.has(skill.id);
+        const chip = document.createElement('div');
+        chip.className = `tool-chip ${isChecked ? 'active' : ''}`;
+        
+        // Botón de eliminar skill
+        const delBtn = `<span onclick="deleteSkill('${skill.id}', event)" style="margin-left:auto; color:#999; font-size:10px; padding:2px; cursor:pointer;" title="Eliminar Skill">✕</span>`;
+
+        chip.onclick = (e) => {
+            if(e.target.tagName === 'SPAN') return; // Evitar click en el botón borrar
+            
+            if(isChecked) acquiredSkills.delete(skill.id);
+            else acquiredSkills.add(skill.id);
+            
+            localStorage.setItem('unmsm_adm_v11_s', JSON.stringify([...acquiredSkills]));
+            renderSkillsUI();
+        };
+        
+        chip.innerHTML = `
+            <div class="tool-check">${isChecked ? '✓' : ''}</div>
+            <span>${skill.name}</span>
+            ${delBtn}
+        `;
+        grid.appendChild(chip);
+    });
+}
+
+// 6. BORRAR UNA SKILL
+window.deleteSkill = function(id, event) {
+    event.stopPropagation();
+    if(confirm("¿Eliminar esta habilidad de la lista?")) {
+        globalSkillsDB = globalSkillsDB.filter(s => s.id !== id);
+        acquiredSkills.delete(id);
+        saveSkillsDB();
+        renderSkillsUI();
+    }
+};
+
+// 7. BORRAR TODO (RESET)
+window.resetSkillsDB = function() {
+    if(confirm("¿Estás seguro? Se borrarán todas las habilidades personalizadas.")) {
+        localStorage.removeItem('lumin_skills_db');
+        acquiredSkills.clear();
+        localStorage.removeItem('unmsm_adm_v11_s');
+        location.reload();
+    }
+};
+
+// ==========================================
+// 8. LA "MAGIA" DE INTERNET (IA SUGGESTION)
+// ==========================================
+window.suggestSkillsWithAI = async function() {
+    if(typeof customAreas === 'undefined' || customAreas.length === 0) {
+        return alert("Primero define tus Áreas en la pestaña 'Mi Carrera'.");
+    }
+
+    const btn = event.target || document.activeElement;
+    const oldText = btn.innerText;
+    btn.innerText = "Consultando IA...";
+    btn.disabled = true;
+
+    // Crear prompt contexto
+    const areaNames = customAreas.map(a => a.name).join(', ');
+    
+    const prompt = `
+        Actúa como un API JSON.
+        El usuario estudia una carrera con estas áreas de especialización: [${areaNames}].
+        Genera una lista de 5 habilidades técnicas (Hard Skills) específicas y recomendadas para este perfil.
+        
+        Formato de respuesta estrictamente JSON array:
+        [
+            {"name": "Nombre Skill 1", "targetArea": "${customAreas[0].name}", "weight": 3},
+            {"name": "Nombre Skill 2", "targetArea": "${customAreas.length > 1 ? customAreas[1].name : customAreas[0].name}", "weight": 2}
+        ]
+        
+        Reglas:
+        1. "targetArea" debe coincidir EXACTAMENTE con alguno de estos nombres: ${areaNames}.
+        2. "weight" entre 1 y 3.
+        3. Solo devuelve el JSON, nada de texto extra.
+    `;
+
+    try {
+        const encoded = encodeURIComponent(prompt);
+        // Usamos Pollinations (gratis, sin key)
+        const response = await fetch(`https://text.pollinations.ai/${encoded}?model=openai&seed=${Math.floor(Math.random()*1000)}`);
+        const text = await response.text();
+        
+        // Limpiar respuesta (a veces la IA pone ```json ... ```)
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const suggestions = JSON.parse(cleanJson);
+
+        let addedCount = 0;
+
+        suggestions.forEach(sugg => {
+            // Buscar ID del área basado en el nombre que devolvió la IA
+            let targetId = 'all';
+            const foundArea = customAreas.find(a => a.name.toLowerCase() === sugg.targetArea.toLowerCase());
+            if(foundArea) targetId = foundArea.id;
+
+            // Verificar duplicados
+            if(!globalSkillsDB.find(x => x.name === sugg.name)) {
+                globalSkillsDB.push({
+                    id: 'ai_' + Math.floor(Math.random()*10000),
+                    name: sugg.name,
+                    weights: { [targetId]: sugg.weight }
+                });
+                addedCount++;
+            }
         });
 
-        // Actualizamos las barras incluyendo 'log'
-        ['fin','mkt','rrhh','op','log'].forEach(k => {
-            const p = mx[k]===0 ? 0 : Math.round((sc[k]/mx[k])*100);
-            const elPct = document.getElementById(`pct-${k}`);
-            const elBar = document.getElementById(`bar-${k}`);
-            if(elPct) elPct.innerText = `${p}%`;
-            if(elBar) elBar.style.width = `${p}%`;
-        });
+        saveSkillsDB();
+        renderSkillsUI();
+        alert(`✅ La IA agregó ${addedCount} nuevas habilidades sugeridas a tu lista.`);
+
+    } catch (e) {
+        console.error(e);
+        alert("La IA tuvo un problema generando el JSON. Intenta de nuevo.");
     }
+
+    btn.innerText = oldText;
+    btn.disabled = false;
+};
 
     // ================= SIMULADOR CON MINUTOS (NUEVO) =================
 
@@ -3531,6 +3766,14 @@
     window.nextSchedule = nextSchedule;
     window.prevSchedule = prevSchedule;
     window.applyGeneratedSchedule = applyGeneratedSchedule;
+
+    // --- NUEVAS FUNCIONES DE SKILLS ---
+    window.toggleSkillConfig = toggleSkillConfig;
+    window.addNewSkill = addNewSkill;
+    window.suggestSkillsWithAI = suggestSkillsWithAI;
+    window.deleteSkill = deleteSkill;
+    window.resetSkillsDB = resetSkillsDB;
+    // ----------------------------------
     
     // Iniciar la app
     // Aseguramos que el DOM esté listo antes de iniciar
