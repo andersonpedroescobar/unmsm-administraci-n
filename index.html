@@ -304,6 +304,51 @@
         z-index: 10;
         }
 
+        /* ============== PEGA AQUÍ EL NUEVO CÓDIGO DEL PASO 1 ============== */
+
+        /* ESTILOS PARA EL GENERADOR MEJORADO */
+        .gen-option-group {
+            border: 1px solid #ccc;
+            background: #fff;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            position: relative;
+            border-left: 4px solid #27ae60; /* Verde para indicar que es una opción válida */
+        }
+
+        .gen-option-header {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .gen-time-row {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 4px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .btn-mini-add {
+            font-size: 0.75rem;
+            background: #eee;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .btn-mini-add:hover { background: #ddd; }
+
+        /* ================================================================== */
+
         /*  ⬆️⬆️⬆️  fin del código ⬆️⬆️⬆️ */
     </style>
 </head>
@@ -3730,9 +3775,8 @@ window.suggestSkillsWithAI = async function() {
     // Gestión de Mallas
     window.restoreAdminMalla = restoreAdminMalla;
     window.importCustomMalla = importCustomMalla;
-    window.copyExportJson = copyExportJson; // Agregué esta que faltaba exportar
-    // window.exportCurrentMalla = exportCurrentMalla; <--- ESTA LINEA ERA EL ERROR (BORRADA)
-
+    window.copyExportJson = copyExportJson; 
+    
     // Builder
     window.initBuilder = initBuilder;
     window.addBuilderCycle = addBuilderCycle;
@@ -3741,42 +3785,43 @@ window.suggestSkillsWithAI = async function() {
     window.updateAllBuilderDropdowns = updateAllBuilderDropdowns;
     
     // Comunidad
-    // window.loadRepoMalla = loadRepoMalla; // <--- ESTA LINEA SE BORRA PORQUE YA NO EXISTE
     window.renderComunidad = renderComunidad;
-    
     window.loadCloudMalla = loadCloudMalla;
+    window.deleteCloudMalla = deleteCloudMalla;
 
-    // Gestión de Áreas (Agregué estas por si acaso las necesitas en los botones HTML)
+    // Gestión de Áreas 
     window.addNewArea = addNewArea;
     window.resetAreas = resetAreas;
     window.removeCustomArea = removeCustomArea;
 
-    window.deleteCloudMalla = deleteCloudMalla;
-    // -----------------------------------------------
+    // Progreso
     window.toggleGoalsEdit = toggleGoalsEdit;
     window.saveDashboardSettings = saveDashboardSettings;
 
     window.logout = logout;
 
-    // EXPORTAR FUNCIONES DEL GENERADOR IA
+    // --- ACTUALIZACIÓN DEL GENERADOR IA ---
     window.toggleGenerator = toggleGenerator;
     window.addGenCourse = addGenCourse;
-    window.addGenSection = addGenSection;
+    
+    // Agregamos las nuevas funciones de grupos/secciones:
+    window.addGenOptionGroup = addGenOptionGroup;
+    window.addGenTimeSlot = addGenTimeSlot;
+    
     window.runGenerator = runGenerator;
     window.nextSchedule = nextSchedule;
     window.prevSchedule = prevSchedule;
     window.applyGeneratedSchedule = applyGeneratedSchedule;
+    // --------------------------------------
 
-    // --- NUEVAS FUNCIONES DE SKILLS ---
+    // Funciones de Skills
     window.toggleSkillConfig = toggleSkillConfig;
     window.addNewSkill = addNewSkill;
     window.suggestSkillsWithAI = suggestSkillsWithAI;
     window.deleteSkill = deleteSkill;
     window.resetSkillsDB = resetSkillsDB;
-    // ----------------------------------
     
     // Iniciar la app
-    // Aseguramos que el DOM esté listo antes de iniciar
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
