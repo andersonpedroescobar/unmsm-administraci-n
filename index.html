@@ -304,51 +304,6 @@
         z-index: 10;
         }
 
-        /* ============== PEGA AQUÍ EL NUEVO CÓDIGO DEL PASO 1 ============== */
-
-        /* ESTILOS PARA EL GENERADOR MEJORADO */
-        .gen-option-group {
-            border: 1px solid #ccc;
-            background: #fff;
-            margin-bottom: 10px;
-            padding: 8px;
-            border-radius: 6px;
-            position: relative;
-            border-left: 4px solid #27ae60; /* Verde para indicar que es una opción válida */
-        }
-
-        .gen-option-header {
-            font-size: 0.85rem;
-            font-weight: bold;
-            color: #27ae60;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .gen-time-row {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-            margin-bottom: 5px;
-            padding: 4px;
-            background: #f9f9f9;
-            border-radius: 4px;
-        }
-
-        .btn-mini-add {
-            font-size: 0.75rem;
-            background: #eee;
-            border: 1px solid #ccc;
-            cursor: pointer;
-            padding: 3px 8px;
-            border-radius: 4px;
-            margin-top: 5px;
-        }
-        .btn-mini-add:hover { background: #ddd; }
-
-        /* ================================================================== */
-
         /*  ⬆️⬆️⬆️  fin del código ⬆️⬆️⬆️ */
     </style>
 </head>
@@ -364,7 +319,7 @@
             <p style="margin-bottom:25px; color:#666;">Ingresa con tu correo autorizado.</p>
             
             <button id="btn-login-google" style="background:#4285F4; color:white; border:none; padding:12px 25px; border-radius:50px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:1rem; box-shadow:0 2px 5px rgba(0,0,0,0.2); width:100%;">
-              <span style="background:white; border-radius:50%; padding:2px; display:flex;"><img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18"></span>
+              
               Iniciar sesión con Google
             </button>
             <p id="login-error" style="color:red; margin-top:15px; font-size:0.9rem; display:none; font-weight:bold;"></p>
@@ -3775,8 +3730,9 @@ window.suggestSkillsWithAI = async function() {
     // Gestión de Mallas
     window.restoreAdminMalla = restoreAdminMalla;
     window.importCustomMalla = importCustomMalla;
-    window.copyExportJson = copyExportJson; 
-    
+    window.copyExportJson = copyExportJson; // Agregué esta que faltaba exportar
+    // window.exportCurrentMalla = exportCurrentMalla; <--- ESTA LINEA ERA EL ERROR (BORRADA)
+
     // Builder
     window.initBuilder = initBuilder;
     window.addBuilderCycle = addBuilderCycle;
@@ -3785,43 +3741,42 @@ window.suggestSkillsWithAI = async function() {
     window.updateAllBuilderDropdowns = updateAllBuilderDropdowns;
     
     // Comunidad
+    // window.loadRepoMalla = loadRepoMalla; // <--- ESTA LINEA SE BORRA PORQUE YA NO EXISTE
     window.renderComunidad = renderComunidad;
+    
     window.loadCloudMalla = loadCloudMalla;
-    window.deleteCloudMalla = deleteCloudMalla;
 
-    // Gestión de Áreas 
+    // Gestión de Áreas (Agregué estas por si acaso las necesitas en los botones HTML)
     window.addNewArea = addNewArea;
     window.resetAreas = resetAreas;
     window.removeCustomArea = removeCustomArea;
 
-    // Progreso
+    window.deleteCloudMalla = deleteCloudMalla;
+    // -----------------------------------------------
     window.toggleGoalsEdit = toggleGoalsEdit;
     window.saveDashboardSettings = saveDashboardSettings;
 
     window.logout = logout;
 
-    // --- ACTUALIZACIÓN DEL GENERADOR IA ---
+    // EXPORTAR FUNCIONES DEL GENERADOR IA
     window.toggleGenerator = toggleGenerator;
     window.addGenCourse = addGenCourse;
-    
-    // Agregamos las nuevas funciones de grupos/secciones:
-    window.addGenOptionGroup = addGenOptionGroup;
-    window.addGenTimeSlot = addGenTimeSlot;
-    
+    window.addGenSection = addGenSection;
     window.runGenerator = runGenerator;
     window.nextSchedule = nextSchedule;
     window.prevSchedule = prevSchedule;
     window.applyGeneratedSchedule = applyGeneratedSchedule;
-    // --------------------------------------
 
-    // Funciones de Skills
+    // --- NUEVAS FUNCIONES DE SKILLS ---
     window.toggleSkillConfig = toggleSkillConfig;
     window.addNewSkill = addNewSkill;
     window.suggestSkillsWithAI = suggestSkillsWithAI;
     window.deleteSkill = deleteSkill;
     window.resetSkillsDB = resetSkillsDB;
+    // ----------------------------------
     
     // Iniciar la app
+    // Aseguramos que el DOM esté listo antes de iniciar
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
